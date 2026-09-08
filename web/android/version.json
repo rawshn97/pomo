@@ -1,0 +1,6 @@
+{
+  "versionCode": 1,
+  "versionName": "1.3.9",
+  "apkUrl": "https://github.com/recoskyler/pomo/releases/download/v1.3.9/pomo-production.apk",
+  "changelog": "Initial OTA release channel for production Android builds."
+}

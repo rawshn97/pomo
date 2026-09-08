@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/build_android_apk.sh - Build Android Debug APK for Android 16
+# scripts/build_android_apk.sh - Build production debug APK (local install / QA)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,21 +11,22 @@ if [ -d "/Users/rawshn/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 fi
 
 echo "=========================================="
-echo "Building Pomo Android Debug APK..."
+echo "Building Pomo Android production debug APK..."
 echo "=========================================="
 
 echo "1. Getting dependencies and localizations..."
 flutter pub get >/dev/null
 flutter gen-l10n --arb-dir="lib/l10n/arb" >/dev/null
 
-echo "2. Building APK (development flavor, debug build)..."
-flutter build apk --debug --flavor development --target lib/main_development.dart
+echo "2. Building APK (production flavor, debug build)..."
+flutter build apk --debug --flavor production --target lib/main_production.dart
 
-OUTPUT_APK="$ROOT/build/app/outputs/flutter-apk/app-development-debug.apk"
+OUTPUT_APK="$ROOT/build/app/outputs/flutter-apk/app-production-debug.apk"
 if [ -f "$OUTPUT_APK" ]; then
   echo "=========================================="
-  echo "Successfully built Debug APK!"
+  echo "Successfully built production debug APK!"
   echo "APK Path: $OUTPUT_APK"
+  echo "Package:  com.recoskyler.pomo"
   echo "=========================================="
 else
   echo "Error: Output APK not found after build."

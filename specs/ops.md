@@ -44,7 +44,8 @@ flutter run --flavor development -d chrome --target lib/main_development.dart
 | Web PWA | `./scripts/build-web.sh` |
 | macOS `.app` | `flutter build macos --release --flavor production -t lib/main_production.dart` |
 | macOS DMG | `./build_macos_dmg.sh` |
-| Android APK | `scripts/build_android_apk.sh` / `build_android_release_apk.sh` |
+| Android APK | `scripts/build_android_apk.sh` / `build_android_release_apk.sh` (production flavor) |
+| Android OTA | `scripts/deploy_android_update.sh` + Vercel `version.json` |
 
 macOS notification banners need `./scripts/setup-macos-signing.sh` (not ad-hoc).
 

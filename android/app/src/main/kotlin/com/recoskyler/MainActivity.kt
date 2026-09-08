@@ -14,13 +14,17 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.recoskyler.pomo/timer_notification"
+    private val APP_UPDATE_CHANNEL = "com.recoskyler.pomo/app_update"
     private var methodChannel: MethodChannel? = null
+    private var appUpdateChannel: MethodChannel? = null
 
     /// Cold-start safe store; Dart pulls via [getPendingNotificationPayload].
     private var pendingNotificationPayload: String? = null
@@ -217,6 +221,76 @@ class MainActivity : FlutterActivity() {
         }
         // Cold start: do not push onNotificationTap on a fixed delay. Dart pulls
         // via getPendingNotificationPayload after setMethodCallHandler.
+
+        appUpdateChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            APP_UPDATE_CHANNEL,
+        )
+        appUpdateChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "canInstallPackages" -> {
+                    val allowed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        packageManager.canRequestPackageInstalls()
+                    } else {
+                        true
+                    }
+                    result.success(allowed)
+                }
+                "requestInstallPermission" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        if (!packageManager.canRequestPackageInstalls()) {
+                            try {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                ).apply {
+                                    data = Uri.parse("package:$packageName")
+                                }
+                                startActivity(intent)
+                                result.success(false)
+                            } catch (e: Exception) {
+                                result.success(false)
+                            }
+                        } else {
+                            result.success(true)
+                        }
+                    } else {
+                        result.success(true)
+                    }
+                }
+                "installApk" -> {
+                    val path = call.argument<String>("path")
+                    if (path.isNullOrBlank()) {
+                        result.error("INVALID", "path is required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val file = File(path)
+                        if (!file.exists()) {
+                            result.error("MISSING", "APK file not found", null)
+                            return@setMethodCallHandler
+                        }
+                        val uri = FileProvider.getUriForFile(
+                            this,
+                            "${applicationContext.packageName}.fileprovider",
+                            file,
+                        )
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(
+                                uri,
+                                "application/vnd.android.package-archive",
+                            )
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("INSTALL", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -225,6 +299,7 @@ class MainActivity : FlutterActivity() {
             liveChannel = null
         }
         methodChannel?.setMethodCallHandler(null)
+        appUpdateChannel?.setMethodCallHandler(null)
         super.onDestroy()
     }
 }

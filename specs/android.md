@@ -45,10 +45,44 @@ Overnight Doze, reboot, and force-stop still need **device** QA. See `docs/super
 
 ## Builds
 
-`scripts/build_android_apk.sh`, `scripts/build_android_release_apk.sh`. Always `--flavor` + production/development target.
+`scripts/build_android_apk.sh` and `scripts/build_android_release_apk.sh` build the **production** flavor only:
+
+```bash
+flutter build apk --release --flavor production -t lib/main_production.dart
+```
+
+Package id: `com.recoskyler.pomo` (no suffix).
+
+## Release signing (one keystore)
+
+OTA updates require the **same release keystore** on every build. Copy `android/key.properties.example` to `android/key.properties` (gitignored) and point `storeFile` at your `.jks` file. CI can use `ANDROID_KEYSTORE_*` env vars (see `android/app/build.gradle`).
+
+Without `key.properties`, release builds fall back to the debug keystore and cannot replace a signed install.
+
+## OTA updates (personal Android installs)
+
+| Asset | Host | Cost |
+|-------|------|------|
+| APK binary | [GitHub Releases](https://github.com/recoskyler/pomo/releases) | Free |
+| `version.json` | Vercel `https://pomo-focus-sand.vercel.app/android/version.json` | Free tier |
+
+On launch (production Android only), the app fetches `version.json`, compares `versionCode` to `pubspec` build number (`+N`), and offers download + install via `FileProvider`.
+
+**Ship workflow:**
+
+```bash
+# Bump pubspec version first (e.g. 1.3.10+2)
+./scripts/deploy_android_update.sh "Changelog here"
+vercel deploy --prod   # publish version.json
+```
+
+One-time on device: Settings → allow **Install unknown apps** for Pomo.
+
+Dart: `lib/services/app_update_service.dart`, `lib/widgets/settings_segments/android_app_update_tile.dart`. Native: `MainActivity` channel `com.recoskyler.pomo/app_update`, `FileProvider` in `AndroidManifest.xml`.
 
 ## Document history
 
 | Date | Change |
 |------|--------|
+| 2026-09-08 | Production-only builds + GitHub/Vercel OTA channel |
 | 2026-09-03 | Initial shipped Android spec |

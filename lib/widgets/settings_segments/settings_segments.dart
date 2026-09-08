@@ -1,4 +1,5 @@
 export 'always_on_top_toggle.dart';
+export 'android_app_update_tile.dart';
 export 'android_battery_opt_tile.dart';
 export 'auto_advance_toggle.dart';
 export 'color_picker.dart';

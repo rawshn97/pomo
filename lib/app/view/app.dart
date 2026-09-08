@@ -8,6 +8,7 @@ import 'package:pomo/pages/about/view/about_page.dart';
 import 'package:pomo/pages/deniz/deniz.dart';
 import 'package:pomo/pages/settings/settings.dart';
 import 'package:pomo/pages/timer/timer.dart';
+import 'package:pomo/widgets/app_update_listener.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -64,8 +65,9 @@ class App extends StatelessWidget {
           create: (context) => SettingsCubit()..loadSettings(),
         ),
       ],
-      child: DesktopShell(
-        child: BlocBuilder<SettingsCubit, SettingsState>(
+      child: AppUpdateListener(
+        child: DesktopShell(
+          child: BlocBuilder<SettingsCubit, SettingsState>(
           buildWhen: (previous, current) =>
               previous.themeMode != current.themeMode ||
               previous.colorSeed != current.colorSeed ||
@@ -125,6 +127,7 @@ class App extends StatelessWidget {
               initialRoute: '/',
             );
           },
+        ),
         ),
       ),
     );

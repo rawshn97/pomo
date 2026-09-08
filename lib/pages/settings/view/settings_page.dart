@@ -65,6 +65,7 @@ class SettingsView extends StatelessWidget {
               SizedBox(height: 16),
               TimeTrackerToggle(),
               TimeTrackerExpansion(),
+              AndroidAppUpdateTile(),
               AndroidBatteryOptTile(),
             ],
           ),

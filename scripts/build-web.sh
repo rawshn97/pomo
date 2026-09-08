@@ -87,4 +87,7 @@ VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
 sed "s/focus-pwa-v1/focus-pwa-${VERSION}/" web/pwa_service_worker.js > deploy/focus/pwa_service_worker.js
 sed "s/focus-pwa-v1/focus-pwa-${VERSION}/" web/pwa_service_worker.js > deploy/pwa_service_worker.js
 
+mkdir -p deploy/android
+cp web/android/version.json deploy/android/version.json
+
 echo "Web build ready at deploy/ and deploy/focus/"
