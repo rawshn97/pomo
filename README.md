@@ -1,60 +1,93 @@
 # Pomo
 
-Agents: see AGENTS.md. Shipped product contracts: SPEC.md.
+Cross-platform Pomodoro timer with hourly time tracking, Notion PARA sync, and RGB webhooks (Home Assistant).
+
+**Download:** [GitHub Releases](https://github.com/rawshn97/pomo/releases) (Android APK, macOS DMG when published)
+
+Agents and contributors: [AGENTS.md](AGENTS.md) · Shipped behavior: [SPEC.md](SPEC.md)
 
 [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
 
-<a href='https://ko-fi.com/recoskyler' target='_blank'><img height='35' style='border:0px;height:46px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com'></a>
+![Dark Mode Screenshot](https://github.com/rawshn97/pomo/blob/main/assets/images/screenshot_dark.png?raw=true)
 
-A simple, cross-platform Pomodoro timer app with WebHook support.
+![Light Mode Screenshot](https://github.com/rawshn97/pomo/blob/main/assets/images/screenshot_light.png?raw=true)
 
-![Dark Mode Screenshot](https://github.com/recoskyler/pomo/blob/main/assets/images/screenshot_dark.png?raw=true)
-
-![Light Mode Screenshot](https://github.com/recoskyler/pomo/blob/main/assets/images/screenshot_light.png?raw=true)
-
-![Settings Page Screenshot](https://github.com/recoskyler/pomo/blob/main/assets/images/settings.png?raw=true)
+![Settings Page Screenshot](https://github.com/rawshn97/pomo/blob/main/assets/images/settings.png?raw=true)
 
 ---
 
-## 🌟 Features
+## Features
 
-- ⏱ Adjustable work, short break, and long break durations
-- 👏 Adjustable lap count
-- 🌐 Webhook integration
-- 🌛 Light/Dark theme
-- 🌈 Themes in a variety of colors
-- ⏰ Customizable timer font
-- 📢 Customizable sounds
+### Focus timer
 
-## ⌨ Keyboard Shortcuts
+- Adjustable work, short break, and long break durations
+- Lap count, auto-advance, custom sounds and timer fonts
+- Light / dark theme and color seeds
+- Optional Notion task picker: log Pomodoro sessions to your PARA Time Logs database
+- Credit work minutes to hourly activity tags when the time tracker is on
 
-- <kbd>Space</kbd> or <kbd>Enter</kbd> to start/pause the timer
-- <kbd>s</kbd> to skip the lap
-- <kbd>r</kbd> or <kbd>BackSpace</kbd> to reset the timer
+### Hourly time tracker
 
-## 🌐 Using WebHooks
+- 24-hour grid and analytics (missed hours, multi-tag splits)
+- Custom activity tags (emoji + color) synced with Notion
+- Quiet hours: suppress reminders; empty slots can fill as Sleep & Rest
+- Android: exact hourly alarms, shade notifications (Log Work / Switch Tag / Open Grid)
 
-You can configure WebHooks from the **Settings** page. When a webhook is triggered, RGB color data in JSON format will be sent along (check below). This RGB color data corresponds to the color of the circular progress indicator on the home page. You can see an example of this data below:
+### Integrations
+
+- **Webhooks:** POST RGB JSON on timer events (comma-separated URLs). Built for [Home Assistant](https://www.home-assistant.io/docs/automation/trigger/#webhook-trigger) ambient lighting.
+- **Notion:** Time Logs, Hourly Timeline, activity tag registry (optional proxy on web; see [specs/web.md](specs/web.md)).
+
+### Platforms
+
+| Platform | Install | Notes |
+|----------|---------|--------|
+| **Android** | [Releases](https://github.com/rawshn97/pomo/releases) → `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). |
+| **macOS** | [Releases](https://github.com/rawshn97/pomo/releases) or [build locally](#macos) | Menu bar, floating overlay, desktop notifications, launch at login |
+| **Web (PWA)** | Deploy via `./scripts/build-web.sh` | CanvasKit PWA; pair with Vercel proxy for Notion on browser |
+
+---
+
+## Installing
+
+### Android (recommended: GitHub Releases)
+
+1. Open **[github.com/rawshn97/pomo/releases](https://github.com/rawshn97/pomo/releases)** on your phone (or download on desktop and transfer).
+2. Download **`pomo-production.apk`** from the latest release.
+3. Install the APK. If prompted, allow **Install unknown apps** for your browser or file manager.
+4. On first launch after install, allow **Install unknown apps** for **Pomo** as well (needed for in-app updates).
+
+**Updates:** Production builds check for updates on launch and in **Settings → Check for updates**. New versions download from GitHub Releases automatically once the OTA manifest is published (no USB / ADB). Details: [specs/android.md](specs/android.md).
+
+### macOS
+
+Download a release build from [Releases](https://github.com/rawshn97/pomo/releases), or build locally (see [macOS](#macos)). Run `./scripts/setup-macos-signing.sh` once so notification banners work (ad-hoc signed apps are refused by macOS).
+
+---
+
+## Keyboard shortcuts (desktop / web)
+
+| Key | Action |
+|-----|--------|
+| <kbd>Space</kbd> or <kbd>Enter</kbd> | Start / pause |
+| <kbd>s</kbd> | Skip lap |
+| <kbd>r</kbd> or <kbd>Backspace</kbd> | Reset |
+
+---
+
+## Webhooks and Home Assistant
+
+Configure URLs under **Settings → Webhooks**. Each trigger sends JSON like:
 
 ```json
 {
-    "rgb": [
-        255, // RED Value
-        0,   // GREEN Value
-        156, // BLUE Value
-    ]
+  "rgb": [255, 0, 156]
 }
 ```
 
-### Triggering multiple webhooks
+(`rgb` matches the timer ring color.) Multiple URLs: comma-separated.
 
-If you would like to trigger multiple WebHook URLs from a single event, you can enter multiple URLs separated by a comma. e.g.:
-
-`https://example.com/api/v1/webhooks/start,https://example2.com/api/v1/webhooks/toggle`
-
-### HomeAssistant Integration
-
-The main reason I created this application was to use these WebHooks to control my ambient light using HomeAssistant. If you have an RGB(W) LED bulb connected to HomeAssistant, you can [create a new WebHook automation](https://www.home-assistant.io/docs/automation/trigger/#webhook-trigger), and use the sample configuration below to set your light bulb's color to the data provided by Pomo:
+Example Home Assistant automation (timer tick):
 
 ```yaml
 alias: Timer Tick Webhook
@@ -74,276 +107,131 @@ condition:
     domain: light
 action:
   - service: light.turn_on
-    metadata: {}
     data:
       rgb_color: "{{ trigger.json['rgb'] }}"
       transition: 1
     target:
-      entity_id: light.192_168_1_3
+      entity_id: light.YOUR_LIGHT
 mode: single
 ```
 
-## macOS menu bar and floating timer
+---
 
-The native macOS app (`Pomo.app`) includes desktop-only features not available in the browser PWA:
+## macOS desktop
 
-- **Menu bar icon**: start/pause, reset, open the main window, settings, and quit from the menu bar
-- **Background mode**: closing the main window hides it; the app keeps running in the menu bar
-- **Floating timer**: a small countdown pill appears over other apps (including fullscreen Spaces) while a session is running or paused
-- **Desktop notifications**: hourly time-tracker check-ins and work/break lap alerts (Settings toggle)
-- **Launch at login**: start hidden in the menu bar when you log in (Settings toggle)
+Native macOS features (not in the browser PWA):
 
-Hourly logs and custom Activity Tags sync between the PWA and macOS app
-through the configured Notion Hourly Timeline database. Open or reload each
-client once after an update to migrate its existing local custom tags.
+- Menu bar controls (start / pause, reset, settings, quit)
+- Background mode: close window → stays in menu bar
+- Floating timer pill over fullscreen apps
+- Desktop notifications (hourly check-ins, lap end)
+- Launch at login (starts hidden in menu bar)
 
-### Build and run on macOS
+Hourly logs and custom activity tags sync across clients via the Notion Hourly Timeline database.
+
+### macOS
 
 ```sh
-# Development
-flutter run --flavor development -d macos --target lib/main_development.dart
+# One-time signing (required for notification banners)
+./scripts/setup-macos-signing.sh
 
-# Production .app
+# Run (production)
+flutter run --flavor production -d macos --target lib/main_production.dart
+
+# Release .app
 flutter build macos --release --flavor production -t lib/main_production.dart
 open build/macos/Build/Products/Release-production/Pomo.app
 
-# One-time: create a local signing identity (required for notification banners;
-# macOS refuses UNUserNotificationCenter authorization for ad-hoc signed apps)
-./scripts/setup-macos-signing.sh
-
-# Production DMG (self-signed; for personal use)
+# DMG (personal / unsigned)
 ./build_macos_dmg.sh
 open ./Pomo.dmg
 ```
 
-The first launch of a newly signed build asks for notification permission.
-Click **Allow** on the system prompt; banners will not appear until you do.
-
-Configure the floating widget, notifications, and launch-at-login under **Settings** (macOS only).
-
-## Installing
-
-You can either download and install one of the already-built [releases](https://github.com/recoskyler/pomo/releases), or [build it yourself](#building).
+---
 
 ## Development
 
-### Tech Stack
-
-- Flutter 3.27.1
-- Dart 3.5.4
-
-This project contains 3 flavors:
-
-- development
-- staging
-- production
-
-To run the desired flavor either use the launch configuration in VSCode/Android Studio or use the following commands:
+### Prerequisites
 
 ```sh
-# Development
-$ flutter run --flavor development --target lib/main_development.dart
-
-# Staging
-$ flutter run --flavor staging --target lib/main_staging.dart
-
-# Production
-$ flutter run --flavor production --target lib/main_production.dart
+./scripts/setup.sh
+# or: flutter pub get && flutter gen-l10n
 ```
 
-_\*Pomo works on iOS, Android, Web, Linux, MacOS, and Windows._
+### Flavors
+
+| Flavor | Entry point | Use |
+|--------|-------------|-----|
+| `production` | `lib/main_production.dart` | Release APK, macOS, web PWA, personal installs |
+| `staging` | `lib/main_staging.dart` | Pre-release QA |
+| `development` | `lib/main_development.dart` | Local dev (overlay window, extra tooling) |
+
+`lib/main.dart` is a stub. Always pass `--flavor` and `--target`.
+
+```sh
+flutter run --flavor development -d macos --target lib/main_development.dart
+flutter run --flavor production -d chrome --target lib/main_production.dart
+```
+
+### Verify
+
+```sh
+./scripts/verify.sh
+```
+
+Runs format check, `flutter analyze`, and tests.
 
 ---
 
-## Working with Translations 🌐
+## Building release artifacts
 
-This project relies on [flutter_localizations][flutter_localizations_link] and follows the [official internationalization guide for Flutter][internationalization_link].
+| Artifact | Command |
+|----------|---------|
+| Android APK (production) | `./scripts/build_android_release_apk.sh` |
+| Android OTA ship | `./scripts/deploy_android_update.sh "changelog"` then `vercel deploy --prod` |
+| Web PWA | `./scripts/build-web.sh` |
+| macOS `.app` | `flutter build macos --release --flavor production -t lib/main_production.dart` |
+| macOS DMG | `./build_macos_dmg.sh` |
 
-### Adding Strings
+**Android signing:** Copy `android/key.properties.example` → `android/key.properties` and point at your release `.jks`. Use the **same keystore** for every release or Android will treat updates as a different app. Release keystore backup: Notion **Personal Assets** → *Pomo Android Release Keystore* (agents: see [AGENTS.md](AGENTS.md)).
 
-1. To add a new localizable string, open the `app_en.arb` file at `lib/l10n/arb/app_en.arb`.
+---
 
-```arb
-{
-    "@@locale": "en",
-    "counterAppBarTitle": "Counter",
-    "@counterAppBarTitle": {
-        "description": "Text shown in the AppBar of the Counter Page"
-    }
-}
-```
+## Translations
 
-2. Then add a new key/value and description
-
-```arb
-{
-    "@@locale": "en",
-    "counterAppBarTitle": "Counter",
-    "@counterAppBarTitle": {
-        "description": "Text shown in the AppBar of the Counter Page"
-    },
-    "helloWorld": "Hello World",
-    "@helloWorld": {
-        "description": "Hello World Text"
-    }
-}
-```
-
-3. Use the new string
-
-```dart
-import 'package:pomo/l10n/l10n.dart';
-
-@override
-Widget build(BuildContext context) {
-  final l10n = context.l10n;
-  return Text(l10n.helloWorld);
-}
-```
-
-### Adding Supported Locales
-
-Update the `CFBundleLocalizations` array in the `Info.plist` at `ios/Runner/Info.plist` to include the new locale.
-
-```xml
-...
-
-<key>CFBundleLocalizations</key>
-<array>
-    <string>en</string>
-</array>
-
-...
-```
-
-### Adding Translations
-
-1. For each supported locale, add a new ARB file in `lib/l10n/arb`.
-
-```
-├── l10n
-│   ├── arb
-│   │   ├── app_en.arb
-│   │   └── app_es.arb
-```
-
-2. Add the translated strings to each `.arb` file:
-
-`app_en.arb`
-
-```arb
-{
-    "@@locale": "en",
-    "timer": "Timer"
-    ...
-}
-```
-
-### Generating Translations
-
-To use the latest translations changes, you will need to generate them:
-
-1. Generate localizations for the current project:
+Strings live in `lib/l10n/arb/app_en.arb`. After editing:
 
 ```sh
 flutter gen-l10n --arb-dir="lib/l10n/arb"
 ```
 
-Alternatively, run `flutter run` and code generation will take place automatically.
-
-### Generating Splash Screens
-
-To use the latest splash screen changes, you will need to generate them:
+Asset codegen (when icons / splash change):
 
 ```sh
 dart run flutter_native_splash:create
-```
-
-### Generating Launcher Icons
-
-To use the latest launcher icon (`<project root>/assets/images/pomo_logo.png`) changes, you will need to generate them:
-
-```sh
 dart run flutter_launcher_icons
 ```
 
-## Building
+---
 
-### Building for the web
+## Docs map
 
-1. Enable web support:
+| File | Purpose |
+|------|---------|
+| [README.md](README.md) | Install and build (this file) |
+| [SPEC.md](SPEC.md) | Shipped product index |
+| [specs/](specs/) | Per-feature contracts |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System design |
+| [AGENTS.md](AGENTS.md) | Agent operating rules |
+| [CLAUDE.md](CLAUDE.md) | Topology and commands |
 
-    ```bash
-    $ flutter config --enable-web
-    ```
-
-2. Build the web app:
-
-    ```bash
-    $ flutter build web --release -o docs
-    ```
-
-### Building .APK
-
-Follow the steps [here](https://docs.flutter.dev/deployment/android). Make sure to create a keystore.
-
-```bash
-$ flutter build apk
-```
-
-### Building .DEB & .RPM (on Ubuntu 22.04)
-
-More info [here](https://docs.flutter.dev/deployment/linux) and [here](https://medium.com/@fluttergems/packaging-and-distributing-flutter-desktop-apps-the-missing-guide-part-3-linux-24ef8d30a5b4).
-
-1. Install and activate the `flutter_distributor` plugin:
-
-    ```bash
-    $ flutter pub global activate flutter_distributor
-    ```
-
-2. Install the OS dependencies:
-
-    ```bash
-    $ sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad libgtk-3-0 libblkid1 liblzma5
-    ```
-
-3. Enable Linux desktop support:
-
-    ```bash
-    $ flutter config --enable-linux-desktop
-    ```
-
-#### Building .DEB
-
-```bash
-$ flutter_distributor release --name=dev --jobs=release-dev-linux-deb
-```
-
-#### Building .RPM
-
-```bash
-$ sudo apt-get install rpm patchelf
-
-$ flutter_distributor release --name=dev --jobs=release-dev-linux-rpm
-```
-
-### Building .EXE
-
-[*good luck*](https://medium.com/@fluttergems/packaging-and-distributing-flutter-desktop-apps-the-missing-guide-part-2-windows-0b468d5e9e70)
-
-[help](https://docs.flutter.dev/deployment/windows)
+---
 
 ## About
 
-By [recoskyler](https://github.com/recoskyler) - 2024
+By [rawshn97](https://github.com/rawshn97). Fork lineage: [recoskyler/pomo](https://github.com/recoskyler/pomo).
 
-- Used **Major Mono Display** font by *Emre Parlak*.
+Timer font **Major Mono Display** by Emre Parlak.
 
-[coverage_badge]: coverage_badge.svg
-[flutter_localizations_link]: https://api.flutter.dev/flutter/flutter_localizations/flutter_localizations-library.html
-[internationalization_link]: https://flutter.dev/docs/development/accessibility-and-localization/internationalization
-[license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
-[license_link]: https://opensource.org/licenses/MIT
 [very_good_analysis_badge]: https://img.shields.io/badge/style-very_good_analysis-B22C89.svg
 [very_good_analysis_link]: https://pub.dev/packages/very_good_analysis
-[very_good_cli_link]: https://github.com/VeryGoodOpenSource/very_good_cli
