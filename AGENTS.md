@@ -56,6 +56,18 @@ flutter run --flavor development -d macos --target lib/main_development.dart
 
 - Never commit `.env`, `.env.*` (see `.gitignore`). Template: tracked `sample.env` (not `.env.example`).
 - Do not commit credentials, personal Notion tokens, or local session dumps.
+- Never commit `android/key.properties` or `*.jks`.
+
+### Android release keystore (agent recovery)
+
+If a production APK build fails for missing signing config and no local `android/key.properties` exists:
+
+1. **Notion RAG:** search Personal Assets for **Pomo Android Release Keystore** ([Notion page](https://www.notion.so/3d53dffea13981c4b366fe5dc35d4598), `Canonical` row).
+2. **Download** `pomo-release.jks` from the row's **Drive URL** (Google Drive MCP or Composio `googledrive`).
+3. **Write** `android/key.properties` using alias/passwords from the row **Notes** (default path: `~/Keys/pomo-release.jks`).
+4. **Build** with `./scripts/build_android_release_apk.sh`. Do not generate a new keystore; OTA updates require the same key.
+
+Local backup may also exist at `~/.cursor/secrets/pomo-android-keystore.env` on the owner's machine.
 
 ## Docs
 

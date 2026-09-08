@@ -193,7 +193,7 @@ Runs format check, `flutter analyze`, and tests.
 | macOS `.app` | `flutter build macos --release --flavor production -t lib/main_production.dart` |
 | macOS DMG | `./build_macos_dmg.sh` |
 
-**Android signing:** Copy `android/key.properties.example` → `android/key.properties` and point at your release `.jks`. Use the **same keystore** for every release or Android will treat updates as a different app. Release keystore backup: Notion **Personal Assets** → *Pomo Android Release Keystore* (agents: see [AGENTS.md](AGENTS.md)).
+**Android signing:** Copy `android/key.properties.example` → `android/key.properties` and point at your release `.jks`. Use the **same keystore** for every release or Android will treat updates as a different app. Keystore backup (private): [Notion Personal Assets → Pomo Android Release Keystore](https://www.notion.so/3d53dffea13981c4b366fe5dc35d4598) (`.jks` on Google Drive; agents: [AGENTS.md](AGENTS.md)).
 
 ---
 
