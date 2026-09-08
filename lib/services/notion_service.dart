@@ -182,7 +182,7 @@ class NotionService {
           .whereType<Map<String, dynamic>>()
           .map(NotionTask.fromNotionApi)
           .toList();
-      return resolveProjectTitles(parsed);
+      return await resolveProjectTitles(parsed);
     } on DioException catch (e) {
       Logger().e('Notion queryTasks error: ${e.message}', error: e);
       rethrow;
