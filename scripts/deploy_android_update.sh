@@ -44,7 +44,7 @@ VERSION_CODE="${VERSION_LINE##*+}"
 TAG="v${VERSION_NAME}"
 APK_NAME="pomo-production.apk"
 MANIFEST_PATH="$ROOT/web/android/version.json"
-APK_URL="https://github.com/recoskyler/pomo/releases/download/${TAG}/${APK_NAME}"
+APK_URL="https://github.com/rawshn97/pomo/releases/download/${TAG}/${APK_NAME}"
 
 echo "==> Building production release APK..."
 "$ROOT/scripts/build_android_release_apk.sh"

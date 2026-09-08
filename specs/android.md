@@ -65,7 +65,7 @@ Without `key.properties`, release builds fall back to the debug keystore and can
 
 | Asset | Host | Cost |
 |-------|------|------|
-| APK binary | [GitHub Releases](https://github.com/recoskyler/pomo/releases) | Free |
+| APK binary | [GitHub Releases](https://github.com/rawshn97/pomo/releases) | Free |
 | `version.json` | Vercel `https://pomo-focus-sand.vercel.app/android/version.json` | Free tier |
 
 On launch (production Android only), the app fetches `version.json`, compares `versionCode` to `pubspec` build number (`+N`), and offers download + install via `FileProvider`.
