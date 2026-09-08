@@ -348,7 +348,7 @@ abstract class S {
   /// No description provided for @madeBy2.
   ///
   /// In en, this message translates to:
-  /// **' - 2024'**
+  /// **' - 2026'**
   String get madeBy2;
 
   /// No description provided for @timer.

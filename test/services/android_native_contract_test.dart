@@ -102,9 +102,13 @@ void main() {
       ]),
     );
     expect(
-        mainActivity, contains('call.argument<Boolean>("enableTimeTracker")'));
+      mainActivity,
+      contains('call.argument<Boolean>("enableTimeTracker")'),
+    );
     expect(
-        mainActivity, contains('call.argument<Boolean>("enableQuietHours")'));
+      mainActivity,
+      contains('call.argument<Boolean>("enableQuietHours")'),
+    );
     expect(mainActivity, contains('call.argument<String>("quietHoursStart")'));
     expect(mainActivity, contains('call.argument<String>("quietHoursEnd")'));
     expect(mainActivity, contains('call.argument<Number>("triggerAtMillis")'));

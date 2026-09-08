@@ -5,15 +5,11 @@ import 'package:pomo/singletons/prefs.dart';
 
 /// Writes the canonical activity-tag inventory to specs/activity-tags.md.
 class TagRegistryWriter {
-  static String? _overrideRoot;
-
   /// Test hook to redirect output away from the repo.
-  static void setProjectRootForTests(String? root) {
-    _overrideRoot = root;
-  }
+  static String? projectRootForTests;
 
   static Future<void> writeIfPossible() async {
-    final root = _overrideRoot ?? _resolveProjectRoot();
+    final root = projectRootForTests ?? _resolveProjectRoot();
     if (root == null) {
       return;
     }
@@ -24,7 +20,7 @@ class TagRegistryWriter {
   }
 
   static String _buildMarkdown(List<TrackerTag> tags) {
-    final defaults = TrackerTag.defaults;
+    const defaults = TrackerTag.defaults;
     final defaultIds = defaults.map((tag) => tag.id).toSet();
     final customs = tags.where((tag) => !defaultIds.contains(tag.id)).toList()
       ..sort(

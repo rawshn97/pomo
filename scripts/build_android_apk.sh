@@ -5,8 +5,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if [ -d "/Users/rawshn/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" ]; then
-  export JAVA_HOME="/Users/rawshn/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+# Locate Java 21/17 dynamically if JAVA_HOME is unset or invalid
+if [ -z "${JAVA_HOME:-}" ] || [ ! -d "$JAVA_HOME" ]; then
+  if command -v /usr/libexec/java_home >/dev/null 2>&1 && /usr/libexec/java_home >/dev/null 2>&1; then
+    export JAVA_HOME="$(/usr/libexec/java_home -v 21 2>/dev/null || /usr/libexec/java_home 2>/dev/null)"
+  elif [ -d "$HOME/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" ]; then
+    export JAVA_HOME="$HOME/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+  elif [ -d "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" ]; then
+    export JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+  elif [ -d "/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" ]; then
+    export JAVA_HOME="/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+  fi
+fi
+if [ -n "${JAVA_HOME:-}" ] && [ -d "$JAVA_HOME" ]; then
   export PATH="$JAVA_HOME/bin:$PATH"
 fi
 

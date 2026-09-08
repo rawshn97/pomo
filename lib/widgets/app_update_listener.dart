@@ -40,7 +40,6 @@ class _AppUpdateListenerState extends State<AppUpdateListener> {
     final navigator = Navigator.of(context, rootNavigator: true);
     final install = await showDialog<bool>(
       context: context,
-      barrierDismissible: true,
       builder: (dialogContext) {
         return AlertDialog(
           title: Text('Update available (v${manifest.versionName})'),

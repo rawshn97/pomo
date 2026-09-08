@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:logger/web.dart';
+import 'package:logger/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pomo/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,7 +10,7 @@ class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
   Future<void> _launchUrl() async {
-    final uri = Uri.parse('https://github.com/rawshn');
+    final uri = Uri.parse('https://github.com/rawshn97/pomo');
 
     if (!await launchUrl(uri)) {
       Logger().e('Failed to launch GitHub link');
@@ -92,6 +92,12 @@ class AboutPage extends StatelessWidget {
                       TextSpan(text: l10n.madeBy2),
                     ],
                   ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _launchUrl,
+                  icon: const Icon(Icons.code, size: 18),
+                  label: const Text('Open source on GitHub'),
                 ),
               ],
             ),

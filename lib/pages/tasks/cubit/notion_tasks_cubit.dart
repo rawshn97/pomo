@@ -20,7 +20,7 @@ class NotionTasksCubit extends Cubit<NotionTasksState> {
         state.copyWith(
           status: () => NotionTasksStatus.failure,
           errorMessage: () =>
-              'Please enter the focus access code to browse tasks.',
+              'Please enter your Notion token or access code to browse tasks.',
         ),
       );
       return;

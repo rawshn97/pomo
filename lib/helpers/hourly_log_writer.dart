@@ -7,7 +7,7 @@ import 'package:pomo/models/tracker_tag.dart';
 import 'package:pomo/services/notion_sync_service.dart';
 import 'package:pomo/singletons/prefs.dart';
 
-/// Builds and persists hourly logs without a [BuildContext].
+/// Builds and persists hourly logs without a `BuildContext`.
 class HourlyLogWriter {
   /// Instant 60-minute log for [hour] on [date] using [tag].
   static HourlyLog build({
@@ -119,7 +119,8 @@ class HourlyLogWriter {
       }
       final existing = Prefs.hourlyLogs
           .where(
-              (row) => row.dateStr == slice.dateStr && row.hour == slice.hour)
+            (row) => row.dateStr == slice.dateStr && row.hour == slice.hour,
+          )
           .toList();
       final merged = TimerTagCreditHelper.mergeCredit(
         existingForHour: existing,

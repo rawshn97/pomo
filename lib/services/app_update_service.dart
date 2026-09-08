@@ -23,6 +23,27 @@ class AppUpdateResult {
     this.installed = false,
   });
 
+  const AppUpdateResult.updateAvailable(AppUpdateManifest manifest)
+      : this._(
+          phase: AppUpdatePhase.idle,
+          manifest: manifest,
+        );
+
+  const AppUpdateResult.failure(String message)
+      : this._(
+          phase: AppUpdatePhase.idle,
+          errorMessage: message,
+        );
+
+  const AppUpdateResult.busy(AppUpdatePhase phase) : this._(phase: phase);
+
+  const AppUpdateResult.installStarted(AppUpdateManifest manifest)
+      : this._(
+          phase: AppUpdatePhase.idle,
+          manifest: manifest,
+          installed: true,
+        );
+
   final AppUpdatePhase phase;
   final AppUpdateManifest? manifest;
   final String? errorMessage;
@@ -32,32 +53,6 @@ class AppUpdateResult {
       manifest != null && errorMessage == null && phase == AppUpdatePhase.idle;
 
   static const idle = AppUpdateResult._(phase: AppUpdatePhase.idle);
-
-  static AppUpdateResult updateAvailable(AppUpdateManifest manifest) {
-    return AppUpdateResult._(
-      phase: AppUpdatePhase.idle,
-      manifest: manifest,
-    );
-  }
-
-  static AppUpdateResult failure(String message) {
-    return AppUpdateResult._(
-      phase: AppUpdatePhase.idle,
-      errorMessage: message,
-    );
-  }
-
-  static AppUpdateResult busy(AppUpdatePhase phase) {
-    return AppUpdateResult._(phase: phase);
-  }
-
-  static AppUpdateResult installStarted(AppUpdateManifest manifest) {
-    return AppUpdateResult._(
-      phase: AppUpdatePhase.idle,
-      manifest: manifest,
-      installed: true,
-    );
-  }
 }
 
 /// Fetches [AppUpdateConfig.manifestUrl], downloads APKs, and triggers install.
@@ -96,7 +91,9 @@ class AppUpdateService {
 
   Future<AppUpdateResult> checkForUpdate() async {
     if (!await isEligible) {
-      return AppUpdateResult.failure('Updates are Android production only.');
+      return const AppUpdateResult.failure(
+        'Updates are Android production only.',
+      );
     }
     if (_phase != AppUpdatePhase.idle) {
       return AppUpdateResult.busy(_phase);
@@ -116,11 +113,11 @@ class AppUpdateService {
       );
       final data = response.data;
       if (data is! Map<String, dynamic>) {
-        return AppUpdateResult.failure('Invalid update manifest.');
+        return const AppUpdateResult.failure('Invalid update manifest.');
       }
       final manifest = AppUpdateManifest.fromJson(data);
       if (!manifest.isValid) {
-        return AppUpdateResult.failure('Update manifest is incomplete.');
+        return const AppUpdateResult.failure('Update manifest is incomplete.');
       }
       if (manifest.versionCode <= localCode) {
         return AppUpdateResult.idle;
@@ -139,14 +136,16 @@ class AppUpdateService {
 
   Future<AppUpdateResult> downloadAndInstall(AppUpdateManifest manifest) async {
     if (!await isEligible) {
-      return AppUpdateResult.failure('Updates are Android production only.');
+      return const AppUpdateResult.failure(
+        'Updates are Android production only.',
+      );
     }
     if (_phase != AppUpdatePhase.idle) {
       return AppUpdateResult.busy(_phase);
     }
 
     if (!manifest.isValid) {
-      return AppUpdateResult.failure('Update manifest is incomplete.');
+      return const AppUpdateResult.failure('Update manifest is incomplete.');
     }
 
     _phase = AppUpdatePhase.downloading;
@@ -168,7 +167,7 @@ class AppUpdateService {
       );
 
       if (!apkFile.existsSync() || apkFile.lengthSync() < 1024) {
-        return AppUpdateResult.failure('Downloaded APK looks invalid.');
+        return const AppUpdateResult.failure('Downloaded APK looks invalid.');
       }
 
       _phase = AppUpdatePhase.installing;
@@ -178,14 +177,16 @@ class AppUpdateService {
         canInstall = await _installService.requestInstallPermission();
       }
       if (!canInstall) {
-        return AppUpdateResult.failure(
+        return const AppUpdateResult.failure(
           'Allow installs from Pomo in Settings, then try again.',
         );
       }
 
       final launched = await _installService.installApk(apkFile.path);
       if (!launched) {
-        return AppUpdateResult.failure('Could not open the package installer.');
+        return const AppUpdateResult.failure(
+          'Could not open the package installer.',
+        );
       }
       return AppUpdateResult.installStarted(manifest);
     } on DioException catch (error) {

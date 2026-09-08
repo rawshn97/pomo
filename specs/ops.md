@@ -54,6 +54,7 @@ macOS notification banners need `./scripts/setup-macos-signing.sh` (not ad-hoc).
 | File | Role |
 |------|------|
 | `AGENTS.md` | Short operating rules |
+| `DEPLOYMENT.md` | Deployment, packaging, and release guide for agents |
 | `CLAUDE.md` | Topology and command copy-paste |
 | `SPEC.md` + `specs/` | Shipped product contracts |
 | `docs/superpowers/` | Process rails, gap matrix, dated plans, QA reports |

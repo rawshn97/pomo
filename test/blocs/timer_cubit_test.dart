@@ -202,9 +202,8 @@ void main() {
         colorHex: '#34A853',
         isDefault: true,
       );
-      final cubit = TimerCubit(clock: () => DateTime(2026, 9, 3, 14, 30));
-      cubit.toggleTag(deepWork);
-      cubit
+      final cubit = TimerCubit(clock: () => DateTime(2026, 9, 3, 14, 30))
+        ..toggleTag(deepWork)
         ..start()
         ..tick(
           const SettingsState(workMinutes: 50),

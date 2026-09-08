@@ -78,7 +78,6 @@ void main() {
           tagName: 'Meetings',
           tagIcon: '📞',
           tagColorHex: '#FBBC05',
-          durationMinutes: 60,
           loggedAt: DateTime(2026, 9, 3, 14),
         ),
       ];
@@ -159,7 +158,6 @@ void main() {
           tagIcon: '😴',
           tagColorHex: '#5C6BC0',
           notes: 'Resting',
-          durationMinutes: 60,
           loggedAt: DateTime(2026, 9, 3, 23),
         ),
       ];

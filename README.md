@@ -1,18 +1,29 @@
 # Pomo
 
-Cross-platform Pomodoro timer with hourly time tracking, Notion PARA sync, and RGB webhooks (Home Assistant).
+Cross-platform Pomodoro timer with 24-hour hourly time tracking, Notion PARA sync, and RGB webhooks.
 
-**Download:** [GitHub Releases](https://github.com/rawshn97/pomo/releases) (Android APK, macOS DMG when published)
-
-Agents and contributors: [AGENTS.md](AGENTS.md) · Shipped behavior: [SPEC.md](SPEC.md)
+**Live Web App (PWA):** [pomo-focus-sand.vercel.app](https://pomo-focus-sand.vercel.app)  
+**Latest Release:** [GitHub Releases (v1.3.9)](https://github.com/rawshn97/pomo/releases/tag/v1.3.9) (Android APK with in-app OTA, macOS DMG)  
+**Docs:** [SPEC.md](SPEC.md) (shipped behavior) · [AGENTS.md](AGENTS.md) (contributor & agent rules) · [ARCHITECTURE.md](ARCHITECTURE.md) (system design)
 
 [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
 
-![Dark Mode Screenshot](https://github.com/rawshn97/pomo/blob/main/assets/images/screenshot_dark.png?raw=true)
+| Focus Timer | 24h Hourly Tracker | Settings & Integrations |
+|:---:|:---:|:---:|
+| ![Focus Timer](assets/images/hero-timer.png) | ![Hourly Tracker](assets/images/hero-tracker.png) | ![Settings & Integrations](assets/images/hero-settings.png) |
 
-![Light Mode Screenshot](https://github.com/rawshn97/pomo/blob/main/assets/images/screenshot_light.png?raw=true)
+---
 
-![Settings Page Screenshot](https://github.com/rawshn97/pomo/blob/main/assets/images/settings.png?raw=true)
+## Upstream vs This Fork
+
+| Upstream (`recoskyler/pomo`) | This repo (`rawshn97/pomo`) |
+|---|---|
+| Single timer screen, webhooks, themes | 3-tab `HomeShell`: Focus, Hourly Tracker, Settings |
+| No hourly grid | 24h grid, missed hours, custom tags, quiet hours / Resting |
+| No Notion | PARA Time Logs + Hourly Timeline + tag registry |
+| No Android background story | FGS timer tile, exact hourly alarms, 1-tap Log Work |
+| Manual APK | Production APK + in-app OTA + GitHub Releases + macOS DMG |
+| Web build to `docs/` | Vercel PWA (`pomo-focus-sand.vercel.app`) + Notion proxy |
 
 ---
 
@@ -42,9 +53,9 @@ Agents and contributors: [AGENTS.md](AGENTS.md) · Shipped behavior: [SPEC.md](S
 
 | Platform | Install | Notes |
 |----------|---------|--------|
-| **Android** | [Releases](https://github.com/rawshn97/pomo/releases) → `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). |
+| **Android** | [Releases (v1.3.9)](https://github.com/rawshn97/pomo/releases/tag/v1.3.9) → `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). |
 | **macOS** | [Releases](https://github.com/rawshn97/pomo/releases) or [build locally](#macos) | Menu bar, floating overlay, desktop notifications, launch at login |
-| **Web (PWA)** | Deploy via `./scripts/build-web.sh` | CanvasKit PWA; pair with Vercel proxy for Notion on browser |
+| **Web (PWA)** | [Live App](https://pomo-focus-sand.vercel.app) or deploy via `./scripts/build-web.sh` | CanvasKit PWA; pair with Vercel proxy for Notion on browser |
 
 ---
 
@@ -193,7 +204,7 @@ Runs format check, `flutter analyze`, and tests.
 | macOS `.app` | `flutter build macos --release --flavor production -t lib/main_production.dart` |
 | macOS DMG | `./build_macos_dmg.sh` |
 
-**Android signing:** Copy `android/key.properties.example` → `android/key.properties` and point at your release `.jks`. Use the **same keystore** for every release or Android will treat updates as a different app. Keystore backup (private): [Notion Personal Assets → Pomo Android Release Keystore](https://www.notion.so/3d53dffea13981c4b366fe5dc35d4598) (`.jks` on Google Drive; agents: [AGENTS.md](AGENTS.md)).
+**Android signing:** Copy `android/key.properties.example` -> `android/key.properties` and point at your release `.jks`. Use the **same keystore** for every release or Android will treat updates as a different app. (Maintainers and agents: see [AGENTS.md](AGENTS.md) for signing keystore recovery instructions).
 
 ---
 

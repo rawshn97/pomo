@@ -12,11 +12,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('TagDedupMigration', () {
+    late Directory tempDir;
+
     setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('pomo-tag-tests');
+      TagRegistryWriter.projectRootForTests = tempDir.path;
       SharedPreferences.setMockInitialValues({});
       await Prefs().init();
       Prefs.activityTagDedupMigrationVersion = 0;
       Prefs.enableNotionSync = false;
+    });
+
+    tearDown(() async {
+      TagRegistryWriter.projectRootForTests = null;
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
     });
 
     test('merges recovered duplicate into default and remaps timer tags',
@@ -52,8 +63,10 @@ void main() {
       );
       expect(Prefs.hourlyLogs.single.tagId, 'tag_reading');
       expect(Prefs.lastTimerTagIds, ['tag_reading']);
-      expect(Prefs.activityTagDedupMigrationVersion,
-          TagDedupMigration.currentVersion);
+      expect(
+        Prefs.activityTagDedupMigrationVersion,
+        TagDedupMigration.currentVersion,
+      );
     });
 
     test('runIfNeeded is idempotent', () async {
@@ -73,7 +86,7 @@ void main() {
 
     test('builds markdown table sorted defaults then customs', () async {
       final dir = await Directory.systemTemp.createTemp('pomo-tag-registry');
-      TagRegistryWriter.setProjectRootForTests(dir.path);
+      TagRegistryWriter.projectRootForTests = dir.path;
       Prefs.trackerTags = [
         ...TrackerTag.defaults,
         const TrackerTag(
@@ -92,8 +105,10 @@ void main() {
       expect(content, contains('`tag_coding`'));
       expect(content, contains('`tag_custom_gaming`'));
       expect(
-          content.indexOf('Coding & Dev'), lessThan(content.indexOf('Gaming')));
-      TagRegistryWriter.setProjectRootForTests(null);
+        content.indexOf('Coding & Dev'),
+        lessThan(content.indexOf('Gaming')),
+      );
+      TagRegistryWriter.projectRootForTests = null;
     });
   });
 }

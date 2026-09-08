@@ -1,6 +1,6 @@
 # AGENTS.md - Pomo
 
-Operating rules for AI agents in `pomo` (`github.com/recoskyler/pomo`).
+Operating rules for AI agents in `pomo` (`github.com/rawshn97/pomo`, forked from `recoskyler/pomo`).
 
 **Sources of truth:** this file = agent operating rules; `SPEC.md` + `specs/` = shipped product contracts; `CLAUDE.md` = topology & build; `ARCHITECTURE.md` = system design; `DESIGN.md` = original product design (2026-07-13). Cursor always-on: `.cursor/rules/agent-guidance.mdc`.
 
@@ -72,6 +72,7 @@ Local backup may also exist at `~/.cursor/secrets/pomo-android-keystore.env` on 
 ## Docs
 
 - `README.md` - human product/install
+- `DEPLOYMENT.md` - deployment, packaging, and release guide for agents
 - `SPEC.md` / `specs/` - shipped contracts
 - `CLAUDE.md` - detailed topology
 - `ARCHITECTURE.md` - system design

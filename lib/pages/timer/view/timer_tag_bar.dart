@@ -101,7 +101,6 @@ class _TimerTagBarState extends State<TimerTagBar> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Align(
-        alignment: Alignment.center,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: Wrap(

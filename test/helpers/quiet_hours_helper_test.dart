@@ -132,7 +132,6 @@ void main() {
         enableQuietHours: true,
         start: '23:00',
         end: '07:00',
-        daysBack: 2,
       );
       expect(logs, isNotEmpty);
       expect(

@@ -78,7 +78,7 @@ class AndroidTrackerStatusPrompt extends StatefulWidget {
         );
       },
     );
-    if (allow == true) {
+    if (allow ?? false) {
       if (requestIgnoreBatteryOptimizations != null) {
         await requestIgnoreBatteryOptimizations();
       } else {

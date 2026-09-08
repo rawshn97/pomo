@@ -34,7 +34,7 @@ class _AccessCodeDialogState extends State<AccessCodeDialog> {
   void _submit() {
     final code = _controller.text.trim();
     if (code.isEmpty) {
-      setState(() => _error = 'Enter the access code to browse tasks.');
+      setState(() => _error = 'Enter a token or access code to browse tasks.');
       return;
     }
 
@@ -57,8 +57,8 @@ class _AccessCodeDialogState extends State<AccessCodeDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Enter the focus access code to load your Notion task list '
-              'on this device.',
+              'Enter your Notion integration token (secret_...) or access code '
+              'to load your Notion task list on this device.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -71,8 +71,8 @@ class _AccessCodeDialogState extends State<AccessCodeDialog> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                labelText: 'Access code',
-                hintText: 'Enter access code',
+                labelText: 'Notion token or access code',
+                hintText: 'secret_... or access code',
                 errorText: _error,
                 filled: true,
                 fillColor: theme.colorScheme.surfaceContainerHighest

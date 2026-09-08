@@ -147,7 +147,7 @@ class SEn extends S {
   String get madeBy1 => 'Made by ';
 
   @override
-  String get madeBy2 => ' - 2024';
+  String get madeBy2 => ' - 2026';
 
   @override
   String get timer => 'Timer';

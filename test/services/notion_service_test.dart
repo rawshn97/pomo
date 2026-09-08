@@ -368,4 +368,51 @@ void main() {
       );
     });
   });
+
+  group('NotionService.getBaseUrl', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await Prefs().init();
+    });
+
+    tearDown(() {
+      Prefs.notionProxyUrl = '';
+      Prefs.notionApiKey = '';
+    });
+
+    test('uses custom absolute proxy url when configured', () {
+      Prefs.notionProxyUrl = 'https://my-proxy.com/notion';
+      expect(
+        NotionService().getBaseUrl(),
+        equals('https://my-proxy.com/notion/'),
+      );
+    });
+
+    test('routes directly to Notion API on native with secret_ token', () {
+      Prefs.notionProxyUrl = '';
+      Prefs.notionApiKey = 'secret_live_12345';
+      expect(
+        NotionService().getBaseUrl(),
+        equals('https://api.notion.com/v1/'),
+      );
+    });
+
+    test('routes directly to Notion API on native with ntn_ token', () {
+      Prefs.notionProxyUrl = '';
+      Prefs.notionApiKey = 'ntn_live_67890';
+      expect(
+        NotionService().getBaseUrl(),
+        equals('https://api.notion.com/v1/'),
+      );
+    });
+
+    test('routes to default proxy when access code is used on native', () {
+      Prefs.notionProxyUrl = '';
+      Prefs.notionApiKey = 'focus_access_code_999';
+      expect(
+        NotionService().getBaseUrl(),
+        equals(NotionService.defaultProxyUrl),
+      );
+    });
+  });
 }

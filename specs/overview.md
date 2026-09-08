@@ -33,7 +33,6 @@ Shared persistence and rules: [shared.md](shared.md).
 
 ## Non-goals (shipped product)
 
-- Bridging Pomodoro elapsed minutes into hourly tag rows (not built; [SPEC_IN_PROGRESS.md](../SPEC_IN_PROGRESS.md)).
 - `fl_chart` analytics library (custom UI instead).
 - `sqflite` offline queue (JSON lists in Prefs).
 - Treating `lib/main.dart` as a real entry (stub only).

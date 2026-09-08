@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:pomo/models/hourly_log.dart';
 import 'package:pomo/models/notion_task.dart';
@@ -37,6 +38,16 @@ class NotionService {
     _pageTitleCache.clear();
   }
 
+  /// Default proxy URL, configurable at build time via --dart-define.
+  static const String defaultProxyUrl = String.fromEnvironment(
+    'DEFAULT_NOTION_PROXY_URL',
+    defaultValue: 'https://pomo-focus-sand.vercel.app/api/notion/',
+  );
+
+  /// Returns the base URL for Notion API requests.
+  @visibleForTesting
+  String getBaseUrl() => _getBaseUrl();
+
   String _getBaseUrl() {
     var proxy = Prefs.notionProxyUrl.trim();
     // Auto-migrate any stored proxy pointing to the unaliased vercel domain
@@ -47,16 +58,43 @@ class NotionService {
       );
     }
     if (proxy.isNotEmpty) {
-      if (proxy.startsWith('http')) {
+      if (proxy.startsWith('http://') || proxy.startsWith('https://')) {
         return proxy.endsWith('/') ? proxy : '$proxy/';
       } else if (proxy.startsWith('/')) {
-        return 'https://pomo-focus-sand.vercel.app'
-            '${proxy.endsWith('/') ? proxy : '$proxy/'}';
+        if (kIsWeb) {
+          final origin = Uri.base.origin;
+          if (origin.isNotEmpty && !origin.startsWith('file:')) {
+            return '$origin${proxy.endsWith('/') ? proxy : '$proxy/'}';
+          }
+        }
+        final base = defaultProxyUrl.endsWith('/')
+            ? defaultProxyUrl
+            : '$defaultProxyUrl/';
+        return '$base${proxy.substring(1)}${proxy.endsWith('/') ? '' : '/'}';
       }
     }
-    // Default universally across Web and native macOS platforms to our
-    // Vercel proxy.
-    return 'https://pomo-focus-sand.vercel.app/api/notion/';
+
+    // On native platforms with a direct Notion integration token (secret_ or ntn_),
+    // connect directly to Notion API without requiring a third-party proxy.
+    final apiKey = Prefs.notionApiKey.trim();
+    final isDirectNotionToken =
+        apiKey.startsWith('secret_') || apiKey.startsWith('ntn_');
+    if (!kIsWeb && isDirectNotionToken) {
+      return 'https://api.notion.com/v1/';
+    }
+
+    // On web, if running on a web origin, default to the origin-relative proxy
+    // (e.g. /api/notion/ on rawshn.com or pomo-focus-sand.vercel.app).
+    if (kIsWeb) {
+      final origin = Uri.base.origin;
+      if (origin.isNotEmpty && !origin.startsWith('file:')) {
+        return '$origin/api/notion/';
+      }
+    }
+
+    return defaultProxyUrl.endsWith('/')
+        ? defaultProxyUrl
+        : '$defaultProxyUrl/';
   }
 
   Map<String, String> _getHeaders(String apiKey) {

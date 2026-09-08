@@ -59,7 +59,7 @@ OTA updates require the **same release keystore** on every build. Copy `android/
 
 Without `key.properties`, release builds fall back to the debug keystore and cannot replace a signed install.
 
-**Canonical backup (private):** Notion Personal Assets → [Pomo Android Release Keystore](https://www.notion.so/3d53dffea13981c4b366fe5dc35d4598) (`Drive File` row; `.jks` on Google Drive). Agents: see `AGENTS.md` → Android release keystore recovery.
+**Signing keystore recovery:** Maintainers and agents, see `AGENTS.md` -> Android release keystore recovery.
 
 ## OTA updates (personal Android installs)
 

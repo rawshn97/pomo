@@ -3,7 +3,7 @@ import 'package:pomo/models/tracker_tag.dart';
 
 /// Quiet-hours window checks for missed-hour scans and Resting auto-logs.
 ///
-/// Kept free of [BuildContext] so unit tests can cover enable/disable and
+/// Kept free of `BuildContext` so unit tests can cover enable/disable and
 /// overnight wrap without a widget tree.
 class QuietHoursHelper {
   /// Built-in Sleep & Rest tag used for DESIGN Resting blocks.
@@ -44,7 +44,7 @@ class QuietHoursHelper {
     return '$y-$m-$d';
   }
 
-  /// Hourly log id matching [HourlyLogDialog] (`hlog_<date>_<hour>_<tagId>`).
+  /// Hourly log id matching `HourlyLogDialog` (`hlog_<date>_<hour>_<tagId>`).
   static String logId({
     required String dateStr,
     required int hour,

@@ -1,6 +1,6 @@
 # CLAUDE.md - Pomo Agent & Developer Guidance
 
-Agent operating rules and workflow entry: see `AGENTS.md`. This file is the detailed topology and build guide for `pomo` (`github.com/recoskyler/pomo`), a cross-platform Pomodoro timer app written in Flutter with WebHook automation and multi-window desktop support.
+Agent operating rules and workflow entry: see `AGENTS.md`. This file is the detailed topology and build guide for `pomo` (`github.com/rawshn97/pomo`, forked from `recoskyler/pomo`), a cross-platform Pomodoro timer app written in Flutter with WebHook automation and multi-window desktop support.
 
 ## 1. Project Topology & Key Directories
 

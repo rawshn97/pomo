@@ -1,6 +1,6 @@
 # Pomo: Technical Specification (index)
 
-**Repo:** `github.com/recoskyler/pomo` · **Branch:** `main`  
+**Repo:** `github.com/rawshn97/pomo` (forked from `recoskyler/pomo`) · **Branch:** `main`  
 **Audience:** product, developers, and agents  
 
 This file is the **entrypoint**. Shipped contracts live under [`specs/`](specs/). Edit the feature file you care about; keep this index short.

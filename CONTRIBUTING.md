@@ -1,6 +1,6 @@
 # CONTRIBUTING.md - Developer Onboarding & Contribution Guide
 
-Welcome to the `pomo` repository (`github.com/recoskyler/pomo`)! We appreciate your interest in contributing to our open-source Pomodoro timer. This guide will walk you through setting up your local environment, working with localization strings, verifying your code changes, and submitting pull requests.
+Welcome to the `pomo` repository (`github.com/rawshn97/pomo`)! We appreciate your interest in contributing to our open-source Pomodoro timer. This guide will walk you through setting up your local environment, working with localization strings, verifying your code changes, and submitting pull requests.
 
 ---
 
@@ -23,7 +23,7 @@ To get up and running immediately after cloning the repository, execute our auto
 
 ```bash
 # 1. Clone repository
-rtk git clone https://github.com/recoskyler/pomo.git
+rtk git clone https://github.com/rawshn97/pomo.git
 cd pomo
 
 # 2. Run automated onboarding setup script (fetches dependencies & runs generators)

@@ -3,7 +3,7 @@ import 'package:pomo/models/app_update_manifest.dart';
 
 void main() {
   test('parses version manifest json', () {
-    final manifest = AppUpdateManifest.fromJson({
+    final manifest = AppUpdateManifest.fromJson(const {
       'versionCode': 12,
       'versionName': '1.4.0',
       'apkUrl': 'https://example.com/app.apk',
@@ -18,7 +18,7 @@ void main() {
   });
 
   test('rejects incomplete manifest', () {
-    final manifest = AppUpdateManifest.fromJson({
+    final manifest = AppUpdateManifest.fromJson(const {
       'versionCode': 0,
       'versionName': '',
       'apkUrl': '',

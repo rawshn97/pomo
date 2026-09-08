@@ -64,7 +64,8 @@ class _TagDeleteDialogState extends State<TagDeleteDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Reassign existing logs from "${widget.tag.icon} ${widget.tag.name}" '
+            'Reassign existing logs from '
+            '"${widget.tag.icon} ${widget.tag.name}" '
             'to another tag before deleting it.',
           ),
           const SizedBox(height: 12),
@@ -74,7 +75,7 @@ class _TagDeleteDialogState extends State<TagDeleteDialog> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<TrackerTag>(
-            value: _target,
+            initialValue: _target,
             decoration: const InputDecoration(
               labelText: 'Reassign to',
               border: OutlineInputBorder(),
