@@ -68,66 +68,66 @@ class App extends StatelessWidget {
       child: AppUpdateListener(
         child: DesktopShell(
           child: BlocBuilder<SettingsCubit, SettingsState>(
-          buildWhen: (previous, current) =>
-              previous.themeMode != current.themeMode ||
-              previous.colorSeed != current.colorSeed ||
-              previous.locale != current.locale,
-          builder: (context, state) {
-            final lightScheme = ColorScheme.fromSeed(
-              seedColor: state.colorSeed ?? Colors.redAccent,
-            );
-            final darkScheme = ColorScheme.fromSeed(
-              seedColor: state.colorSeed ?? Colors.redAccent,
-              brightness: Brightness.dark,
-            );
+            buildWhen: (previous, current) =>
+                previous.themeMode != current.themeMode ||
+                previous.colorSeed != current.colorSeed ||
+                previous.locale != current.locale,
+            builder: (context, state) {
+              final lightScheme = ColorScheme.fromSeed(
+                seedColor: state.colorSeed ?? Colors.redAccent,
+              );
+              final darkScheme = ColorScheme.fromSeed(
+                seedColor: state.colorSeed ?? Colors.redAccent,
+                brightness: Brightness.dark,
+              );
 
-            return MaterialApp(
-              navigatorKey: navigatorKey,
-              theme: _buildTheme(colorScheme: lightScheme),
-              darkTheme: _buildTheme(colorScheme: darkScheme),
-              themeMode: state.themeMode,
-              locale: state.locale,
-              debugShowCheckedModeBanner: false,
-              localizationsDelegates: S.localizationsDelegates,
-              supportedLocales: S.supportedLocales,
-              routes: {
-                '/': (context) => const HomeShell(),
-                '/focus': (context) => const HomeShell(),
-                '/tracker': (context) => const HomeShell(initialIndex: 1),
-                '/settings': (context) => const SettingsPage(),
-                '/about': (context) => const AboutPage(),
-                '/deniz': (context) => const DenizPage(),
-              },
-              onGenerateInitialRoutes: (initialRoute) {
-                final uri = Uri.tryParse(initialRoute);
-                final path = uri?.path ?? initialRoute;
-                if (path == '/tracker') {
+              return MaterialApp(
+                navigatorKey: navigatorKey,
+                theme: _buildTheme(colorScheme: lightScheme),
+                darkTheme: _buildTheme(colorScheme: darkScheme),
+                themeMode: state.themeMode,
+                locale: state.locale,
+                debugShowCheckedModeBanner: false,
+                localizationsDelegates: S.localizationsDelegates,
+                supportedLocales: S.supportedLocales,
+                routes: {
+                  '/': (context) => const HomeShell(),
+                  '/focus': (context) => const HomeShell(),
+                  '/tracker': (context) => const HomeShell(initialIndex: 1),
+                  '/settings': (context) => const SettingsPage(),
+                  '/about': (context) => const AboutPage(),
+                  '/deniz': (context) => const DenizPage(),
+                },
+                onGenerateInitialRoutes: (initialRoute) {
+                  final uri = Uri.tryParse(initialRoute);
+                  final path = uri?.path ?? initialRoute;
+                  if (path == '/tracker') {
+                    return [
+                      MaterialPageRoute<dynamic>(
+                        builder: (context) => const HomeShell(initialIndex: 1),
+                        settings: const RouteSettings(name: '/tracker'),
+                      ),
+                    ];
+                  }
+                  if (path == '/settings') {
+                    return [
+                      MaterialPageRoute<dynamic>(
+                        builder: (context) => const HomeShell(initialIndex: 2),
+                        settings: const RouteSettings(name: '/settings'),
+                      ),
+                    ];
+                  }
                   return [
                     MaterialPageRoute<dynamic>(
-                      builder: (context) => const HomeShell(initialIndex: 1),
-                      settings: const RouteSettings(name: '/tracker'),
+                      builder: (context) => const HomeShell(),
+                      settings: const RouteSettings(name: '/'),
                     ),
                   ];
-                }
-                if (path == '/settings') {
-                  return [
-                    MaterialPageRoute<dynamic>(
-                      builder: (context) => const HomeShell(initialIndex: 2),
-                      settings: const RouteSettings(name: '/settings'),
-                    ),
-                  ];
-                }
-                return [
-                  MaterialPageRoute<dynamic>(
-                    builder: (context) => const HomeShell(),
-                    settings: const RouteSettings(name: '/'),
-                  ),
-                ];
-              },
-              initialRoute: '/',
-            );
-          },
-        ),
+                },
+                initialRoute: '/',
+              );
+            },
+          ),
         ),
       ),
     );

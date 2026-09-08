@@ -118,6 +118,7 @@ app.*.map.json
 !.env.example
 
 dist/*
+Pomo.dmg
 .vercel
 .gstack/
 .env*
