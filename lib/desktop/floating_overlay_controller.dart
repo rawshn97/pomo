@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
@@ -22,6 +23,10 @@ class FloatingOverlayController {
 
   WindowController? _controller;
   bool _visible = false;
+  int _syncGeneration = 0;
+
+  /// Called when the overlay sub-window registers its IPC handler.
+  static Future<void> Function()? onOverlayReady;
 
   static void initMainWindowHandler() {
     if (kIsWeb || !Platform.isMacOS) {
@@ -31,6 +36,8 @@ class FloatingOverlayController {
     DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'showMainWindow') {
         await DesktopWindowService.showMainWindow();
+      } else if (call.method == 'overlayReady') {
+        await onOverlayReady?.call();
       }
       return null;
     });
@@ -55,6 +62,7 @@ class FloatingOverlayController {
     if (_visible) {
       final controller = _controller;
       if (controller != null) {
+        final syncGeneration = ++_syncGeneration;
         final settings = SettingsState(
           workMinutes: Prefs.workMinutes,
           shortBreakMinutes: Prefs.shortBreakMinutes,
@@ -66,6 +74,9 @@ class FloatingOverlayController {
           lap: state.lap,
           settingsState: settings,
         );
+        if (syncGeneration != _syncGeneration) {
+          return;
+        }
         try {
           await DesktopMultiWindow.invokeMethod(
             controller.windowId,
@@ -79,7 +90,14 @@ class FloatingOverlayController {
               'timerCustomFont': Prefs.timerCustomFont,
             },
           );
-        } catch (_) {}
+        } catch (error, stackTrace) {
+          developer.log(
+            'Floating overlay updateTimer IPC failed',
+            name: 'FloatingOverlayController',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
       }
     }
   }

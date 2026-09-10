@@ -19,7 +19,7 @@ Native macOS extras beyond the shared Flutter tabs. Not available in the browser
 
 ## Floating overlay
 
-`OverlayApp` in a `desktop_multi_window` process (`args` `multi_window`). Always-on-top countdown pill. IPC: `FloatingOverlayController` / `updateTimer`. Display only (no tag/task pickers).
+`OverlayApp` in a `desktop_multi_window` process (`args` `multi_window`). Always-on-top countdown pill. IPC only: `FloatingOverlayController` pushes `updateTimer` from `TimerCubit` on every tick; overlay sends `overlayReady` on startup so the main window can sync immediately. Do not poll `Prefs` from the overlay engine (SharedPreferences is cached per Flutter engine). Display only (no tag/task pickers).
 
 ## Notifications
 

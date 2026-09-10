@@ -20,7 +20,7 @@ class OverlayApp extends StatefulWidget {
 }
 
 class _OverlayAppState extends State<OverlayApp> {
-  String _time = '25:00';
+  String _time = '00:00';
   int _lapIndex = 0;
   int _statusIndex = 0;
   Color? _colorSeed;
@@ -30,9 +30,6 @@ class _OverlayAppState extends State<OverlayApp> {
   @override
   void initState() {
     super.initState();
-    _colorSeed = Prefs.colorSeed;
-    _timerFont = Prefs.timerFont;
-    _timerCustomFont = Prefs.timerCustomFont;
     _initWindow();
     _setupMethodHandler();
   }
@@ -57,26 +54,32 @@ class _OverlayAppState extends State<OverlayApp> {
       if (call.method == 'updateTimer') {
         final args = call.arguments as Map<dynamic, dynamic>;
         if (mounted) {
-          setState(() {
-            _time = (args['time'] as String?) ?? _time;
-            _lapIndex = (args['lap'] as int?) ?? _lapIndex;
-            _statusIndex = (args['status'] as int?) ?? _statusIndex;
-            final seedArgb = args['colorSeed'] as int?;
-            _colorSeed = seedArgb != null ? Color(seedArgb) : _colorSeed;
-            final fontName = args['timerFont'] as String?;
-            if (fontName != null) {
-              _timerFont = TimerFont.values.firstWhere(
-                (f) => f.name == fontName,
-                orElse: () => TimerFont.boldMono,
-              );
-            }
-            _timerCustomFont =
-                (args['timerCustomFont'] as String?) ?? _timerCustomFont;
-          });
+          setState(() => _applyUpdate(args));
         }
       }
       return null;
     });
+
+    // Ask the main window to push the current timer state once this engine
+    // can receive IPC. Prefs polling is intentionally avoided here because
+    // each Flutter engine caches SharedPreferences independently.
+    DesktopMultiWindow.invokeMethod(0, 'overlayReady').catchError((_) {});
+  }
+
+  void _applyUpdate(Map<dynamic, dynamic> args) {
+    _time = (args['time'] as String?) ?? _time;
+    _lapIndex = (args['lap'] as int?) ?? _lapIndex;
+    _statusIndex = (args['status'] as int?) ?? _statusIndex;
+    final seedArgb = args['colorSeed'] as int?;
+    _colorSeed = seedArgb != null ? Color(seedArgb) : _colorSeed;
+    final fontName = args['timerFont'] as String?;
+    if (fontName != null) {
+      _timerFont = TimerFont.values.firstWhere(
+        (f) => f.name == fontName,
+        orElse: () => TimerFont.boldMono,
+      );
+    }
+    _timerCustomFont = (args['timerCustomFont'] as String?) ?? _timerCustomFont;
   }
 
   @override

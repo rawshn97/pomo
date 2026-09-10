@@ -64,6 +64,14 @@ class _DesktopShellState extends State<DesktopShell> {
 
     await DesktopWindowService.init();
     await LocalNotificationService.instance.init();
+    FloatingOverlayController.onOverlayReady = () async {
+      if (!mounted) {
+        return;
+      }
+      await FloatingOverlayController.instance.sync(
+        context.read<TimerCubit>().state,
+      );
+    };
     FloatingOverlayController.initMainWindowHandler();
 
     if (!mounted) {
