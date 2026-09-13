@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pomo/models/tracker_tag.dart';
 import 'package:pomo/singletons/prefs.dart';
 
@@ -9,14 +10,24 @@ class TagRegistryWriter {
   static String? projectRootForTests;
 
   static Future<void> writeIfPossible() async {
+    // dart:io Directory/File APIs throw on web and would block bootstrap
+    // forever on the splash screen if awaited from main().
+    if (kIsWeb) {
+      return;
+    }
+
     final root = projectRootForTests ?? _resolveProjectRoot();
     if (root == null) {
       return;
     }
 
-    final file = File('$root/specs/activity-tags.md');
-    await file.parent.create(recursive: true);
-    await file.writeAsString(_buildMarkdown(Prefs.trackerTags));
+    try {
+      final file = File('$root/specs/activity-tags.md');
+      await file.parent.create(recursive: true);
+      await file.writeAsString(_buildMarkdown(Prefs.trackerTags));
+    } catch (_) {
+      // Best-effort local registry write; never block app startup.
+    }
   }
 
   static String _buildMarkdown(List<TrackerTag> tags) {
@@ -58,16 +69,20 @@ class TagRegistryWriter {
   }
 
   static String? _resolveProjectRoot() {
-    var dir = Directory.current;
-    for (var depth = 0; depth < 6; depth++) {
-      if (File('${dir.path}/pubspec.yaml').existsSync()) {
-        return dir.path;
+    try {
+      var dir = Directory.current;
+      for (var depth = 0; depth < 6; depth++) {
+        if (File('${dir.path}/pubspec.yaml').existsSync()) {
+          return dir.path;
+        }
+        final parent = dir.parent;
+        if (parent.path == dir.path) {
+          break;
+        }
+        dir = parent;
       }
-      final parent = dir.parent;
-      if (parent.path == dir.path) {
-        break;
-      }
-      dir = parent;
+    } catch (_) {
+      return null;
     }
     return null;
   }

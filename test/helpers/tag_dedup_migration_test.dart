@@ -110,5 +110,12 @@ void main() {
       );
       TagRegistryWriter.projectRootForTests = null;
     });
+
+    test('writeIfPossible is a no-op when project root is unresolved',
+        () async {
+      TagRegistryWriter.projectRootForTests = null;
+      // Should not throw even when Directory walk finds nothing useful.
+      await TagRegistryWriter.writeIfPossible();
+    });
   });
 }
