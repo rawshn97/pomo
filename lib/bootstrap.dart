@@ -43,8 +43,16 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Prefs().init();
-  await TagDedupMigration.runIfNeeded();
-  await TagRegistryWriter.writeIfPossible();
+  try {
+    await TagDedupMigration.runIfNeeded();
+  } catch (error, stackTrace) {
+    log('TagDedupMigration failed: $error', stackTrace: stackTrace);
+  }
+  try {
+    await TagRegistryWriter.writeIfPossible();
+  } catch (error, stackTrace) {
+    log('TagRegistryWriter failed: $error', stackTrace: stackTrace);
+  }
   HookHelper.startHourlyTrackerLoop();
   unawaited(NotionSyncService().flushPendingHourlyLogs());
   // Pull logs created on other devices (e.g. the PWA) first, then reconcile

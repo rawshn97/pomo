@@ -52,11 +52,17 @@ self.addEventListener('fetch', (event) => {
   }
 
   const path = url.pathname;
-  const isNetworkFirst = 
-    path === '/' || 
-    path.endsWith('/index.html') || 
-    path.endsWith('/manifest.json') || 
-    path.endsWith('/version.json');
+  // Always prefer network for the Dart/Flutter entry bundle so deploys are not
+  // stuck behind a cache-first main.dart.js from an earlier build.
+  const isNetworkFirst =
+    path === '/' ||
+    path.endsWith('/index.html') ||
+    path.endsWith('/manifest.json') ||
+    path.endsWith('/version.json') ||
+    path.endsWith('/main.dart.js') ||
+    path.endsWith('/flutter.js') ||
+    path.endsWith('/flutter_bootstrap.js') ||
+    path.endsWith('/pwa_service_worker.js');
 
   if (isNetworkFirst) {
     event.respondWith(
