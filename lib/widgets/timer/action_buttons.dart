@@ -63,9 +63,21 @@ class _ActionButtonsState extends State<ActionButtons>
     super.dispose();
   }
 
+  ButtonStyle _secondaryGlassStyle(ColorScheme scheme) {
+    return IconButton.styleFrom(
+      foregroundColor: scheme.onSurfaceVariant,
+      backgroundColor: scheme.surfaceContainerHigh,
+      disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: 0.35),
+      disabledBackgroundColor:
+          scheme.surfaceContainerHigh.withValues(alpha: 0.45),
+      side: BorderSide(color: scheme.outline.withValues(alpha: 0.85)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
 
     return MultiBlocListener(
       listeners: [
@@ -97,11 +109,7 @@ class _ActionButtonsState extends State<ActionButtons>
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton.filledTonal(
-                color: Theme.of(context).colorScheme.onTertiaryContainer,
-                style: IconButton.styleFrom(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.tertiaryContainer,
-                ),
+                style: _secondaryGlassStyle(scheme),
                 tooltip: l10n.reset,
                 onPressed: state.status == TimerStatus.running
                     ? null
@@ -121,6 +129,8 @@ class _ActionButtonsState extends State<ActionButtons>
                 style: IconButton.styleFrom(
                   fixedSize: const Size.square(64),
                   iconSize: 32,
+                  backgroundColor: scheme.primary,
+                  foregroundColor: scheme.onPrimary,
                 ),
                 tooltip: state.status == TimerStatus.stopped
                     ? l10n.startTimer
@@ -137,6 +147,7 @@ class _ActionButtonsState extends State<ActionButtons>
               BlocBuilder<SettingsCubit, SettingsState>(
                 builder: (context, settingsState) {
                   return IconButton.filledTonal(
+                    style: _secondaryGlassStyle(scheme),
                     tooltip: l10n.skipLap,
                     onPressed: () {
                       _skipController

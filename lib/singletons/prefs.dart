@@ -41,6 +41,21 @@ class Prefs {
   /// Get the SharedPreferences instance
   Future<void> init() async {
     sharedPreferences = await SharedPreferences.getInstance();
+    await _migrateRawshnBrandV1();
+  }
+
+  /// One-time move from legacy coffee/Material seed to rawshn cyan + dark.
+  Future<void> _migrateRawshnBrandV1() async {
+    const key = 'pomo_rawshn_brand_v1';
+    if (sharedPreferences.getBool(key) ?? false) {
+      return;
+    }
+    await sharedPreferences.setInt(
+      _colorSeedVarName,
+      const Color(0xFF00F0FF).toARGB32(),
+    );
+    await sharedPreferences.setString(_themeModeVarName, ThemeMode.dark.name);
+    await sharedPreferences.setBool(key, true);
   }
 
   /// Get a value from SharedPreferences
