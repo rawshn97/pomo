@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pomo/theme/rawshn_brand.dart';
 
 class BoldMonoTime extends StatelessWidget {
   const BoldMonoTime({
@@ -12,26 +13,19 @@ class BoldMonoTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mins = duration.split(':').first;
-    final secs = duration.split(':').last;
+    final scheme = Theme.of(context).colorScheme;
+    final baseStyle =
+        (style ?? Theme.of(context).textTheme.displayLarge)!.copyWith(
+      fontFamily: RawshnBrand.fontMono,
+      fontWeight: FontWeight.w700,
+      fontFeatures: const [FontFeature.tabularFigures()],
+      color: scheme.onSurface,
+      letterSpacing: -1.5,
+    );
 
-    return RichText(
-      text: TextSpan(
-        style: (style ?? Theme.of(context).textTheme.displayLarge)!.copyWith(
-          fontFamily: 'Rubik Mono One',
-        ),
-        children: [
-          TextSpan(text: mins),
-          TextSpan(
-            text: ':',
-            style:
-                (style ?? Theme.of(context).textTheme.displayLarge)!.copyWith(
-              fontFamily: 'Lilita One',
-            ),
-          ),
-          TextSpan(text: secs),
-        ],
-      ),
+    return Text(
+      duration,
+      style: baseStyle,
     );
   }
 }

@@ -123,3 +123,6 @@ Pomo.dmg
 .gstack/
 .env*
 !.env.example
+
+# Local design-consultation scratch
+.gstack/design-tmp/

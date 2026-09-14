@@ -8,7 +8,7 @@ class SettingsState extends Equatable {
     this.shortBreakMinutes = 5,
     this.longBreakMinutes = 15,
     this.lapCount = 4,
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.dark,
     this.workStartWebHook = '',
     this.workEndWebHook = '',
     this.shortBreakStartWebHook = '',

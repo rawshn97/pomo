@@ -121,3 +121,87 @@ We choose **Approach B (Clean-Architecture Feature Module with Background Worker
 
 - **VERDICT:** Eng Review CLEARED - ready for implementation
 NO UNRESOLVED DECISIONS
+
+---
+
+# Visual Brand System — Pomo × rawshn.com
+
+Created by `/design-consultation` on 2026-09-14.
+Branch: `brand/rawshn-align`
+Status: APPROVED
+Memorable thing: **Protect the hour. Prove the day.**
+
+Preview artifact: `~/.gstack/projects/ItsRRM97-pomo/designs/design-system-20260914/pomo-brand-preview.html`
+
+## Product Context
+- **What this is:** Cross-platform Pomodoro focus timer + 24h hourly tracker with Notion PARA sync and RGB webhooks
+- **Who it's for:** Rawshn (personal builder tooling); anyone using the public `/focus` PWA
+- **Space/industry:** Focus / time-tracking productivity apps
+- **Project type:** App UI (Flutter: web PWA, Android, macOS)
+
+## Aesthetic Direction
+- **Direction:** Retro-futuristic terminal glass (aligned to rawshn.com)
+- **Decoration level:** Intentional (subtle cyan glow, glass borders; neon for state only)
+- **Mood:** Motivational instrument, not wellness toy. Dark first. Same world as the portfolio.
+- **Reference:** https://rawshn.com (frozen branding: dark glass / neon)
+
+## Typography
+- **Display / UI:** Space Grotesk (bundled variable font) — matches rawshn.com brand kit on purpose
+- **Body:** Space Grotesk
+- **UI / Labels / Eyebrows:** JetBrains Mono (uppercase tracking)
+- **Data / Timer digits:** JetBrains Mono with tabular figures — default timer face
+- **Code / Status strip:** JetBrains Mono
+- **Loading:** Self-hosted TTF under `fonts/brand/` (no runtime Google Fonts fetch)
+- **Scale:** displayLarge ~48–56 (timer), titleLarge ~22, titleMedium ~16, bodyMedium ~14, labelSmall / mono eyebrow ~11
+
+## Color
+- **Approach:** Restrained neutrals + semantic neon
+- **Surfaces (dark default):**
+  - bg `#0a0c10` · mantle `#10131a` · crust `#06080c` · card `#141822` · border `#223048`
+- **Ink:** `#f6f7f8` primary · `#94a3b8` muted
+- **Accent / Work:** `#00f0ff` (cyan)
+- **Short break:** `#ff00aa` (magenta)
+- **Long break:** `#ff6b35` (orange)
+- **Proven / success:** `#39ff14` (lime)
+- **Missed / warning:** `#facc15` (amber)
+- **Resting:** `#a855f7` (violet)
+- **Error:** `#ff4d6d`
+- **Light mode:** Optional secondary (portfolio light tokens: soft paper bg, blue accent `#1158d1`)
+- **Dark mode:** Primary; surfaces use elevation (mantle/card), not pure black inversion
+
+## Spacing
+- **Base unit:** 8px
+- **Density:** Compact on mobile, comfortable on desktop rail
+- **Scale:** 2xs(2) xs(4) sm(8) md(16) lg(24) xl(32) 2xl(48) 3xl(64)
+
+## Layout
+- **Approach:** Hybrid — app chrome grid-disciplined; Focus face composition-first (one clock, one primary control)
+- **Shell:** Bottom nav (mobile) / NavigationRail (wide ≥800): Focus · Tracker · Settings
+- **Max content width:** Comfortable for forms; timer centered
+- **Border radius:** sm 8 · glass 16 · glass-lg 20 · pill 999
+
+## Motion
+- **Approach:** Intentional
+- **Easing:** enter ease-out · exit ease-in · move ease-in-out
+- **Duration:** micro 50–100ms · short 150–250ms · medium 250–400ms
+- **Honor** `prefers-reduced-motion` / Flutter reduced-motion where applicable
+
+## Brand risks (approved)
+1. Terminal status strip: `pomo@focus: ~/work $` (and path variants per tab)
+2. Neon session semantics for work / break / proven / missed / resting
+3. Glass bordered cards over stock Material 3 filled containers where primary
+
+## Implementation map
+- Tokens + ThemeData: `lib/theme/rawshn_brand.dart`
+- Status strip: `lib/widgets/brand/status_strip.dart`
+- Fonts: `fonts/brand/` + `pubspec.yaml`
+- Default seed: cyan when `Prefs.colorSeed` is null
+- Preview deploy: Vercel **preview** on `brand/rawshn-align` only (not production)
+
+## Decisions Log
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-09-14 | Update DESIGN.md (keep product SoT) + add Visual Brand | Product design must stay; visual system was missing |
+| 2026-09-14 | Memorable: Protect the hour. Prove the day. | Motivates Focus + Tracker together |
+| 2026-09-14 | Match rawshn.com fonts/colors | Explicit brand alignment request |
+| 2026-09-14 | Preview-only Vercel URL | Do not disturb production `/focus` |

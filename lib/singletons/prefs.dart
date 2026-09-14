@@ -291,10 +291,10 @@ class Prefs {
               (e) =>
                   e.name ==
                   (Prefs().sharedPreferences.getString(_themeModeVarName) ??
-                      'system'),
+                      'dark'),
             )
             .firstOrNull ??
-        ThemeMode.system;
+        ThemeMode.dark;
   }
 
   static TimerFont get timerFont {

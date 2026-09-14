@@ -4,6 +4,7 @@ import 'package:pomo/helpers/duration_helper.dart';
 import 'package:pomo/helpers/lap_helper.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
+import 'package:pomo/theme/rawshn_brand.dart';
 
 class TimerProgress extends StatelessWidget {
   const TimerProgress({super.key});
@@ -14,17 +15,9 @@ class TimerProgress extends StatelessWidget {
     required BuildContext context,
   }) {
     if (status == TimerStatus.running) {
-      switch (lap) {
-        case TimerLap.work:
-          return Theme.of(context).colorScheme.primaryContainer;
-        case TimerLap.shortBreak:
-          return Theme.of(context).colorScheme.secondary;
-        case TimerLap.longBreak:
-          return Theme.of(context).colorScheme.tertiary;
-      }
-    } else {
-      return Theme.of(context).colorScheme.secondaryContainer;
+      return RawshnBrand.lapAccent(lap);
     }
+    return Theme.of(context).colorScheme.outline;
   }
 
   @override

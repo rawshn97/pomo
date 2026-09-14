@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/pages/settings/settings.dart';
 import 'package:pomo/pages/timer/timer.dart';
 import 'package:pomo/pages/tracker/tracker.dart';
 import 'package:pomo/services/app_navigation_controller.dart';
+import 'package:pomo/theme/rawshn_brand.dart';
+import 'package:pomo/widgets/brand/status_strip.dart';
 
 /// Top-level application shell with tab switcher encapsulating Pomodoro,
 /// Time Log history, and Settings without losing state.
@@ -61,6 +64,30 @@ class _HomeShellState extends State<HomeShell> {
     _setSelectedIndex(index);
   }
 
+  Widget _shellBody() {
+    return Column(
+      children: [
+        BlocBuilder<TimerCubit, TimerState>(
+          buildWhen: (previous, current) => previous.lap != current.lap,
+          builder: (context, timerState) {
+            return StatusStrip(
+              path: RawshnBrand.statusPath(
+                tabIndex: _selectedIndex,
+                lap: timerState.lap,
+              ),
+            );
+          },
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: _pages,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -78,12 +105,12 @@ class _HomeShellState extends State<HomeShell> {
                 NavigationRailDestination(
                   icon: Icon(Icons.timer_outlined),
                   selectedIcon: Icon(Icons.timer),
-                  label: Text('Focus Timer'),
+                  label: Text('Focus'),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.history_outlined),
                   selectedIcon: Icon(Icons.history),
-                  label: Text('Time Log'),
+                  label: Text('Tracker'),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.settings_outlined),
@@ -93,22 +120,14 @@ class _HomeShellState extends State<HomeShell> {
               ],
             ),
             const VerticalDivider(thickness: 1, width: 1),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: _pages,
-              ),
-            ),
+            Expanded(child: _shellBody()),
           ],
         ),
       );
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: _shellBody(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
@@ -116,12 +135,12 @@ class _HomeShellState extends State<HomeShell> {
           NavigationDestination(
             icon: Icon(Icons.timer_outlined),
             selectedIcon: Icon(Icons.timer),
-            label: 'Focus Timer',
+            label: 'Focus',
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history),
-            label: 'Time Log',
+            label: 'Tracker',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

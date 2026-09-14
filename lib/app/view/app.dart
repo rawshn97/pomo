@@ -8,51 +8,13 @@ import 'package:pomo/pages/about/view/about_page.dart';
 import 'package:pomo/pages/deniz/deniz.dart';
 import 'package:pomo/pages/settings/settings.dart';
 import 'package:pomo/pages/timer/timer.dart';
+import 'package:pomo/theme/rawshn_brand.dart';
 import 'package:pomo/widgets/app_update_listener.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
 
   static final navigatorKey = GlobalKey<NavigatorState>();
-
-  static ThemeData _buildTheme({
-    required ColorScheme colorScheme,
-  }) {
-    final base = ThemeData(
-      useMaterial3: true,
-      fontFamily: 'Roboto',
-      colorScheme: colorScheme,
-    );
-    final textTheme = base.textTheme.apply(
-      bodyColor: colorScheme.onSurface,
-      displayColor: colorScheme.onSurface,
-    );
-
-    return base.copyWith(
-      textTheme: textTheme,
-      primaryTextTheme: textTheme,
-      appBarTheme: AppBarTheme(
-        centerTitle: true,
-        foregroundColor: colorScheme.onSurface,
-      ),
-      expansionTileTheme: ExpansionTileThemeData(
-        textColor: colorScheme.onSurface,
-        collapsedTextColor: colorScheme.onSurface,
-        iconColor: colorScheme.onSurface,
-        collapsedIconColor: colorScheme.onSurface,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        labelStyle:
-            textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
-        hintStyle:
-            textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-      ),
-      listTileTheme: ListTileThemeData(
-        textColor: colorScheme.onSurface,
-        iconColor: colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,19 +35,21 @@ class App extends StatelessWidget {
                 previous.colorSeed != current.colorSeed ||
                 previous.locale != current.locale,
             builder: (context, state) {
-              final lightScheme = ColorScheme.fromSeed(
-                seedColor: state.colorSeed ?? Colors.redAccent,
-              );
-              final darkScheme = ColorScheme.fromSeed(
-                seedColor: state.colorSeed ?? Colors.redAccent,
-                brightness: Brightness.dark,
-              );
+              final seed = state.colorSeed ?? RawshnBrand.defaultSeed;
 
               return MaterialApp(
                 navigatorKey: navigatorKey,
-                theme: _buildTheme(colorScheme: lightScheme),
-                darkTheme: _buildTheme(colorScheme: darkScheme),
-                themeMode: state.themeMode,
+                theme: RawshnBrand.buildTheme(
+                  brightness: Brightness.light,
+                  seed: seed,
+                ),
+                darkTheme: RawshnBrand.buildTheme(
+                  brightness: Brightness.dark,
+                  seed: seed,
+                ),
+                themeMode: state.themeMode == ThemeMode.system
+                    ? ThemeMode.dark
+                    : state.themeMode,
                 locale: state.locale,
                 debugShowCheckedModeBanner: false,
                 localizationsDelegates: S.localizationsDelegates,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
+import 'package:pomo/theme/rawshn_brand.dart';
 
 class ColorPicker extends StatelessWidget {
   const ColorPicker({
@@ -10,6 +11,12 @@ class ColorPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = [
+      RawshnBrand.cyan,
+      RawshnBrand.magenta,
+      RawshnBrand.orange,
+      RawshnBrand.lime,
+      RawshnBrand.amber,
+      RawshnBrand.violet,
       Colors.redAccent,
       Colors.pink,
       Colors.purple,
@@ -17,14 +24,10 @@ class ColorPicker extends StatelessWidget {
       Colors.indigo,
       Colors.blue,
       Colors.lightBlue,
-      Colors.cyan,
       Colors.teal,
       Colors.green,
       Colors.lightGreen,
-      Colors.lime,
       Colors.yellow,
-      Colors.amber,
-      Colors.orange,
       Colors.deepOrange,
       Colors.brown,
       Colors.grey,

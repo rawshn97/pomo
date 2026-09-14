@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pomo/theme/rawshn_brand.dart';
 
 class MonoTime extends StatelessWidget {
   const MonoTime({
@@ -12,22 +13,12 @@ class MonoTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mins = duration.split(':').first;
-    final secs = duration.split(':').last;
-
-    return RichText(
-      text: TextSpan(
-        style: (style ?? Theme.of(context).textTheme.displayLarge)!.copyWith(
-          fontFamily: 'Roboto Mono',
-        ),
-        children: [
-          TextSpan(text: mins),
-          TextSpan(
-            text: ':',
-            style: style ?? Theme.of(context).textTheme.displayLarge,
-          ),
-          TextSpan(text: secs),
-        ],
+    return Text(
+      duration,
+      style: (style ?? Theme.of(context).textTheme.displayLarge)!.copyWith(
+        fontFamily: RawshnBrand.fontMono,
+        fontWeight: FontWeight.w500,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }

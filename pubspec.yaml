@@ -45,6 +45,18 @@ flutter:
   generate: true
 
   fonts:
+    - family: Space Grotesk
+      fonts:
+        - asset: fonts/brand/SpaceGrotesk-Variable.ttf
+
+    - family: JetBrains Mono
+      fonts:
+        - asset: fonts/brand/JetBrainsMono-Regular.ttf
+        - asset: fonts/brand/JetBrainsMono-Medium.ttf
+          weight: 500
+        - asset: fonts/brand/JetBrainsMono-Bold.ttf
+          weight: 700
+
     - family: Roboto
       fonts:
         - asset: fonts/Roboto-Regular.ttf
