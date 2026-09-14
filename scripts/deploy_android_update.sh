@@ -76,11 +76,20 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 
 echo "==> Creating GitHub release ${TAG}..."
+# gh treats path#label as a display label only; the download URL uses the
+# real filename. Copy to APK_NAME so browser_download_url matches version.json.
+STAGED_APK="$(mktemp -t pomo-release-XXXXXX)/${APK_NAME}"
+mkdir -p "$(dirname "$STAGED_APK")"
+cp -f "$APK_PATH" "$STAGED_APK"
+trap 'rm -rf "$(dirname "$STAGED_APK")"' EXIT
+
 if gh release view "$TAG" >/dev/null 2>&1; then
   echo "Release ${TAG} exists; uploading/replacing APK asset..."
-  gh release upload "$TAG" "$APK_PATH#${APK_NAME}" --clobber
+  # Drop legacy Gradle filename if a prior broken upload left it behind.
+  gh release delete-asset "$TAG" "app-production-release.apk" --yes 2>/dev/null || true
+  gh release upload "$TAG" "$STAGED_APK" --clobber
 else
-  gh release create "$TAG" "$APK_PATH#${APK_NAME}" \
+  gh release create "$TAG" "$STAGED_APK" \
     --title "Pomo ${VERSION_NAME}" \
     --notes "$CHANGELOG"
 fi

@@ -190,8 +190,10 @@ class AppUpdateService {
       }
       return AppUpdateResult.installStarted(manifest);
     } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      final detail = status != null ? 'HTTP $status' : error.type.name;
       return AppUpdateResult.failure(
-        'Download failed (${error.type.name}).',
+        'Download failed ($detail).',
       );
     } catch (error) {
       return AppUpdateResult.failure('Install failed: $error');
