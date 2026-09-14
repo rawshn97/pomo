@@ -19,7 +19,9 @@ App bar can open the Notion Hourly Timeline database in the browser when sync is
 
 Rows are `HourlyLog` entries in `Prefs.hourlyLogs`, written by `HourlyLogWriter.creditTimerMinutes()` when the Focus timer pauses, changes lap, resets, or switches tasks. Auto-filled quiet-hour Resting rows are excluded from focus analytics.
 
-Optional Notion pull on load keeps local history in sync with the Hourly Timeline database.
+`Prefs.hourlyLogsRevision` bumps on every local write so `TimeLogHistoryView` refreshes immediately (IndexedStack otherwise keeps a stale snapshot). Opening the Time Log tab also re-reads Prefs via `AppNavigationController.currentTabIndex`.
+
+Optional Notion pull on first load / pull-to-refresh keeps local history in sync with the Hourly Timeline database.
 
 ## Analytics (`TimeLogAnalyticsHelper`)
 
@@ -51,3 +53,4 @@ If `enableQuietHours`, `HourlyLogWriter.reconcileResting` still fills empty quie
 |------|--------|
 | 2026-09-03 | Initial shipped hourly tracker spec |
 | 2026-09-14 | Decommission manual hourly logging; replace with read-only Time Log analytics |
+| 2026-09-14 | Live refresh after Focus timer credits (`hourlyLogsRevision` + tab select) |

@@ -7,7 +7,11 @@ class AppNavigationController {
 
   static final AppNavigationController instance = AppNavigationController._();
 
+  /// Requested tab from notifications (cleared after HomeShell consumes it).
   final ValueNotifier<int?> tabIndex = ValueNotifier<int?>(null);
+
+  /// Currently visible HomeShell tab (0 Focus, 1 Time Log, 2 Settings).
+  final ValueNotifier<int> currentTabIndex = ValueNotifier<int>(0);
 
   /// Handle a parsed notification action: show UI and route as needed.
   Future<void> handleNotificationAction(NotificationAction? action) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pomo/helpers/hourly_log_writer.dart';
 import 'package:pomo/helpers/time_log_analytics_helper.dart';
 import 'package:pomo/models/hourly_log.dart';
+import 'package:pomo/services/app_navigation_controller.dart';
 import 'package:pomo/services/notion_service.dart';
 import 'package:pomo/services/notion_sync_service.dart';
 import 'package:pomo/singletons/prefs.dart';
@@ -29,7 +30,32 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
   @override
   void initState() {
     super.initState();
+    Prefs.hourlyLogsRevision.addListener(_onLocalLogsChanged);
+    AppNavigationController.instance.currentTabIndex.addListener(_onTabChanged);
     _loadLogs();
+  }
+
+  @override
+  void dispose() {
+    Prefs.hourlyLogsRevision.removeListener(_onLocalLogsChanged);
+    AppNavigationController.instance.currentTabIndex
+        .removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  /// Immediate UI refresh from Prefs after Focus timer credits tags.
+  void _onLocalLogsChanged() {
+    if (!mounted) return;
+    setState(() => _allLogs = Prefs.hourlyLogs);
+  }
+
+  /// IndexedStack keeps this page alive; re-read Prefs when Time Log opens.
+  void _onTabChanged() {
+    if (!mounted) return;
+    if (AppNavigationController.instance.currentTabIndex.value != 1) {
+      return;
+    }
+    setState(() => _allLogs = Prefs.hourlyLogs);
   }
 
   void _loadLogs() {

@@ -897,6 +897,10 @@ class Prefs {
     ];
   }
 
+  /// Bumps whenever [hourlyLogs] is replaced so UI can refresh immediately
+  /// (e.g. Time Log tab after Focus timer credits tags).
+  static final ValueNotifier<int> hourlyLogsRevision = ValueNotifier<int>(0);
+
   static List<HourlyLog> get hourlyLogs {
     final rawList =
         Prefs().sharedPreferences.getStringList(_hourlyLogsVarName) ?? [];
@@ -908,6 +912,7 @@ class Prefs {
   static set hourlyLogs(List<HourlyLog> value) {
     final encoded = value.map((e) => jsonEncode(e.toJson())).toList();
     Prefs().sharedPreferences.setStringList(_hourlyLogsVarName, encoded);
+    hourlyLogsRevision.value++;
   }
 
   static Future<void> saveHourlyLog(HourlyLog log) async {

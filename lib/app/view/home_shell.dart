@@ -28,6 +28,7 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
+    AppNavigationController.instance.currentTabIndex.value = _selectedIndex;
     AppNavigationController.instance.tabIndex.addListener(_onNavRequest);
   }
 
@@ -37,24 +38,27 @@ class _HomeShellState extends State<HomeShell> {
     super.dispose();
   }
 
+  void _setSelectedIndex(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    AppNavigationController.instance.currentTabIndex.value = index;
+  }
+
   void _onNavRequest() {
     final index = AppNavigationController.instance.tabIndex.value;
     if (index == null || !mounted) {
       return;
     }
     if (index != _selectedIndex) {
-      setState(() {
-        _selectedIndex = index;
-      });
+      _setSelectedIndex(index);
     }
     // Clear so the same tab can be requested again later.
     AppNavigationController.instance.tabIndex.value = null;
   }
 
   void _onDestinationSelected(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    _setSelectedIndex(index);
   }
 
   @override
