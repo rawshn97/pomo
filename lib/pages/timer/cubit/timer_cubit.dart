@@ -125,31 +125,34 @@ class TimerCubit extends Cubit<TimerState> {
   /// Finalizes the current session by either deleting it (if under 1 minute)
   /// or updating it with the final elapsed time (if 1 minute or more).
   /// Called when resetting the timer, changing/clearing tasks, or changing laps.
+  ///
+  /// When [activeLogPageId] is still null (create at start failed or is in
+  /// flight), still call [NotionSyncService.updateSessionRecord] so auto-
+  /// advance lap changes do not drop completed focus time.
   void _finalizeSession() {
     if (!Prefs.enableTimeTracker) return;
     if (state.activeTask == null) return;
     if (state.lap != TimerLap.work) return;
 
     final logPageId = state.activeLogPageId;
-    if (logPageId == null || logPageId.isEmpty) return;
-
-    // Capture before callers clear Prefs session fields.
     final alreadySynced = Prefs.syncedMinutes;
     final totalMinutes = state.duration.inMinutes;
+
     if (totalMinutes < 1) {
-      // The session has no valid tracked focus time; delete it to avoid clutter
-      NotionSyncService().deleteSessionRecord(logPageId);
-    } else {
-      // Finalize the record with the latest elapsed minutes
-      final taskToSync = state.activeTask!;
-      NotionSyncService().updateSessionRecord(
-        task: taskToSync,
-        totalElapsed: state.duration,
-        existingLogPageId: logPageId,
-        endedAt: DateTime.now(),
-        previouslySyncedMinutes: alreadySynced,
-      );
+      if (logPageId != null && logPageId.isNotEmpty) {
+        NotionSyncService().deleteSessionRecord(logPageId);
+      }
+      return;
     }
+
+    final taskToSync = state.activeTask!;
+    NotionSyncService().updateSessionRecord(
+      task: taskToSync,
+      totalElapsed: state.duration,
+      existingLogPageId: logPageId,
+      endedAt: DateTime.now(),
+      previouslySyncedMinutes: alreadySynced,
+    );
   }
 
   void _creditActiveTags() {

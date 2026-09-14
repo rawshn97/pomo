@@ -51,11 +51,11 @@ void main() {
     await settleIgnoringChildOverflow(tester);
 
     expect(find.text('Focus Timer'), findsWidgets);
-    expect(find.text('Hourly Tracker'), findsOneWidget);
+    expect(find.text('Time Log'), findsOneWidget);
     expect(find.text('Settings'), findsWidgets);
     expect(find.byType(NavigationBar), findsOneWidget);
 
-    await tester.tap(find.text('Hourly Tracker'));
+    await tester.tap(find.text('Time Log'));
     await settleIgnoringChildOverflow(tester);
     expect(find.byType(TrackerShellPage), findsOneWidget);
   });

@@ -27,7 +27,7 @@ Gated by `Prefs.enableNotionSync` plus API key (`secret_...` or shared access co
 
 Idempotency: stable `Prefs.activeSessionExternalId`. On retry, matching row still credits task cumulative time (`checkIdempotency` + patch). Sub-minute sessions are deleted on finalize.
 
-Pending JSON: `Prefs.pendingTimeLogs`.
+Pending JSON: `Prefs.pendingTimeLogs`. Bootstrap flushes both pending queues on launch.
 
 ## Hourly logs (Hourly Timeline)
 

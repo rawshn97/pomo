@@ -5,7 +5,7 @@ import 'package:pomo/pages/tracker/tracker.dart';
 import 'package:pomo/services/app_navigation_controller.dart';
 
 /// Top-level application shell with tab switcher encapsulating Pomodoro,
-/// Hourly Time Tracker & Analytics, and Settings without losing state.
+/// Time Log history, and Settings without losing state.
 class HomeShell extends StatefulWidget {
   const HomeShell({this.initialIndex = 0, super.key});
 
@@ -77,9 +77,9 @@ class _HomeShellState extends State<HomeShell> {
                   label: Text('Focus Timer'),
                 ),
                 NavigationRailDestination(
-                  icon: Icon(Icons.view_timeline_outlined),
-                  selectedIcon: Icon(Icons.view_timeline),
-                  label: Text('Hourly Tracker'),
+                  icon: Icon(Icons.history_outlined),
+                  selectedIcon: Icon(Icons.history),
+                  label: Text('Time Log'),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.settings_outlined),
@@ -115,9 +115,9 @@ class _HomeShellState extends State<HomeShell> {
             label: 'Focus Timer',
           ),
           NavigationDestination(
-            icon: Icon(Icons.view_timeline_outlined),
-            selectedIcon: Icon(Icons.view_timeline),
-            label: 'Hourly Tracker',
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Time Log',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

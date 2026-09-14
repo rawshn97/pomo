@@ -55,6 +55,7 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   }
   HookHelper.startHourlyTrackerLoop();
   unawaited(NotionSyncService().flushPendingHourlyLogs());
+  unawaited(NotionSyncService().flushPendingLogs());
   // Pull logs created on other devices (e.g. the PWA) first, then reconcile
   // Resting into empty slots and recover custom Activity Tags from pulled rows.
   unawaited(
