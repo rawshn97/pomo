@@ -50,12 +50,12 @@ void main() {
     await tester.pumpWidget(wrap(const HomeShell()));
     await settleIgnoringChildOverflow(tester);
 
-    expect(find.text('Focus Timer'), findsWidgets);
-    expect(find.text('Time Log'), findsOneWidget);
+    expect(find.text('Focus'), findsWidgets);
+    expect(find.text('Tracker'), findsOneWidget);
     expect(find.text('Settings'), findsWidgets);
     expect(find.byType(NavigationBar), findsOneWidget);
 
-    await tester.tap(find.text('Time Log'));
+    await tester.tap(find.text('Tracker'));
     await settleIgnoringChildOverflow(tester);
     expect(find.byType(TrackerShellPage), findsOneWidget);
   });
