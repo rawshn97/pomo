@@ -78,7 +78,7 @@ fi
 echo "==> Creating GitHub release ${TAG}..."
 # gh treats path#label as a display label only; the download URL uses the
 # real filename. Copy to APK_NAME so browser_download_url matches version.json.
-STAGED_APK="$(mktemp -t pomo-release-XXXXXX)/${APK_NAME}"
+STAGED_APK="$(mktemp -d -t pomo-release-XXXXXX)/${APK_NAME}"
 mkdir -p "$(dirname "$STAGED_APK")"
 cp -f "$APK_PATH" "$STAGED_APK"
 trap 'rm -rf "$(dirname "$STAGED_APK")"' EXIT

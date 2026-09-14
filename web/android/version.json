@@ -1,6 +1,6 @@
 {
-  "versionCode": 3,
-  "versionName": "1.3.11",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.3.11/pomo-production.apk",
-  "changelog": "Time Log refreshes after Focus stop; task sessions finalize on auto-advance; tracker history tab."
+  "versionCode": 4,
+  "versionName": "1.4.0",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.0/pomo-production.apk",
+  "changelog": "Rawshn brand: dark glass / neon Focus UI, compact activity tags, splash alignment (1.4.0)"
 }
