@@ -1,6 +1,6 @@
 {
-  "versionCode": 4,
-  "versionName": "1.4.0",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.0/pomo-production.apk",
-  "changelog": "Rawshn brand: dark glass / neon Focus UI, compact activity tags, splash alignment (1.4.0)"
+  "versionCode": 5,
+  "versionName": "1.4.1",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.1/pomo-production.apk",
+  "changelog": "Manual time log entry and editing, week-to-date filter, custom date selection, remove macOS hourly reminder"
 }

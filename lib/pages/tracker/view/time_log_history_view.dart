@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:pomo/helpers/hourly_log_writer.dart';
 import 'package:pomo/helpers/time_log_analytics_helper.dart';
 import 'package:pomo/models/hourly_log.dart';
+import 'package:pomo/pages/tracker/view/edit_time_log_dialog.dart';
+import 'package:pomo/pages/tracker/view/manual_time_entry_dialog.dart';
 import 'package:pomo/services/app_navigation_controller.dart';
 import 'package:pomo/services/notion_service.dart';
 import 'package:pomo/services/notion_sync_service.dart';
 import 'package:pomo/singletons/prefs.dart';
+
+/// Supported filter intervals for the Time Log history tab.
+enum TimeLogFilterMode {
+  thisWeek,
+  days7,
+  days14,
+  days30,
+  days90,
+  custom,
+}
 
 /// Read-only history and analytics for timer-credited activity logs.
 class TimeLogHistoryView extends StatefulWidget {
@@ -16,16 +28,10 @@ class TimeLogHistoryView extends StatefulWidget {
 }
 
 class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
-  int _periodDays = 7;
+  TimeLogFilterMode _filterMode = TimeLogFilterMode.thisWeek;
+  DateTimeRange? _customRange;
   DateTime _selectedDate = DateTime.now();
   List<HourlyLog> _allLogs = [];
-
-  static const _periodOptions = <int, String>{
-    7: '7 days',
-    14: '14 days',
-    30: '30 days',
-    90: '90 days',
-  };
 
   @override
   void initState() {
@@ -75,10 +81,57 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
 
   String get _selectedDateStr => TimeLogAnalyticsHelper.dateStr(_selectedDate);
 
-  PeriodAnalytics get _periodAnalytics => TimeLogAnalyticsHelper.analyzePeriod(
-        logs: _allLogs,
-        periodDays: _periodDays,
-      );
+  PeriodAnalytics get _periodAnalytics {
+    final now = DateTime.now();
+    switch (_filterMode) {
+      case TimeLogFilterMode.thisWeek:
+        final start = TimeLogAnalyticsHelper.startOfWeekSunday(now);
+        return TimeLogAnalyticsHelper.analyzeDateRange(
+          logs: _allLogs,
+          start: start,
+          end: now,
+          today: now,
+        );
+      case TimeLogFilterMode.days7:
+        return TimeLogAnalyticsHelper.analyzePeriod(
+          logs: _allLogs,
+          periodDays: 7,
+          today: now,
+        );
+      case TimeLogFilterMode.days14:
+        return TimeLogAnalyticsHelper.analyzePeriod(
+          logs: _allLogs,
+          periodDays: 14,
+          today: now,
+        );
+      case TimeLogFilterMode.days30:
+        return TimeLogAnalyticsHelper.analyzePeriod(
+          logs: _allLogs,
+          periodDays: 30,
+          today: now,
+        );
+      case TimeLogFilterMode.days90:
+        return TimeLogAnalyticsHelper.analyzePeriod(
+          logs: _allLogs,
+          periodDays: 90,
+          today: now,
+        );
+      case TimeLogFilterMode.custom:
+        if (_customRange != null) {
+          return TimeLogAnalyticsHelper.analyzeDateRange(
+            logs: _allLogs,
+            start: _customRange!.start,
+            end: _customRange!.end,
+            today: now,
+          );
+        }
+        return TimeLogAnalyticsHelper.analyzePeriod(
+          logs: _allLogs,
+          periodDays: 7,
+          today: now,
+        );
+    }
+  }
 
   DaySummary get _selectedDaySummary =>
       TimeLogAnalyticsHelper.summarizeDay(_allLogs, _selectedDateStr);
@@ -107,6 +160,34 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
     }
   }
 
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _customRange ??
+          DateTimeRange(
+            start: now.subtract(const Duration(days: 6)),
+            end: now,
+          ),
+      firstDate: DateTime(2025),
+      lastDate: now,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _customRange = picked;
+        _filterMode = TimeLogFilterMode.custom;
+      });
+    }
+  }
+
+  void _addManualLog() {
+    ManualTimeEntryDialog.show(context, initialDate: _selectedDate);
+  }
+
+  void _editLog(HourlyLog log) {
+    EditTimeLogDialog.show(context, log: log);
+  }
+
   void _selectDay(String dateStr) {
     setState(() {
       _selectedDate = TimeLogAnalyticsHelper.parseDateStr(dateStr);
@@ -128,9 +209,10 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
           _PeriodSelector(
-            periodDays: _periodDays,
-            options: _periodOptions,
-            onChanged: (days) => setState(() => _periodDays = days),
+            filterMode: _filterMode,
+            customRange: _customRange,
+            onChanged: (mode) => setState(() => _filterMode = mode),
+            onPickCustomRange: _pickCustomRange,
           ),
           const SizedBox(height: 12),
           _SummaryGrid(
@@ -189,6 +271,7 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
                           _selectedDate.add(const Duration(days: 1)),
                     ),
             onPickDate: _pickDate,
+            onAddTime: _addManualLog,
           ),
           const SizedBox(height: 8),
           if (daySummary.totalMinutes == 0)
@@ -199,7 +282,9 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
               child: _TagBreakdownSection(
                 tags: TimeLogAnalyticsHelper.tagBreakdown(
                   TimeLogAnalyticsHelper.logsForDate(
-                      _allLogs, _selectedDateStr),
+                    _allLogs,
+                    _selectedDateStr,
+                  ),
                 ),
                 totalMinutes: daySummary.totalMinutes,
                 parseColor: _parseHexColor,
@@ -212,6 +297,7 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
                 hourLogs: dayHourLogs,
                 parseColor: _parseHexColor,
                 selectedDate: _selectedDate,
+                onEditLog: _editLog,
               ),
             ),
           ],
@@ -223,31 +309,82 @@ class _TimeLogHistoryViewState extends State<TimeLogHistoryView> {
 
 class _PeriodSelector extends StatelessWidget {
   const _PeriodSelector({
-    required this.periodDays,
-    required this.options,
+    required this.filterMode,
+    required this.customRange,
     required this.onChanged,
+    required this.onPickCustomRange,
   });
 
-  final int periodDays;
-  final Map<int, String> options;
-  final ValueChanged<int> onChanged;
+  final TimeLogFilterMode filterMode;
+  final DateTimeRange? customRange;
+  final ValueChanged<TimeLogFilterMode> onChanged;
+  final VoidCallback onPickCustomRange;
 
   @override
   Widget build(BuildContext context) {
+    String customLabel;
+    if (customRange != null) {
+      final s = customRange!.start;
+      final e = customRange!.end;
+      customLabel = '${s.month}/${s.day} - ${e.month}/${e.day}';
+    } else {
+      customLabel = 'Custom Range';
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: options.entries.map((entry) {
-          final selected = entry.key == periodDays;
-          return Padding(
+        children: [
+          Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(entry.value),
-              selected: selected,
-              onSelected: (_) => onChanged(entry.key),
+              label: const Text('This Week (Sun - Now)'),
+              selected: filterMode == TimeLogFilterMode.thisWeek,
+              onSelected: (_) => onChanged(TimeLogFilterMode.thisWeek),
             ),
-          );
-        }).toList(),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: const Text('7 days'),
+              selected: filterMode == TimeLogFilterMode.days7,
+              onSelected: (_) => onChanged(TimeLogFilterMode.days7),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: const Text('14 days'),
+              selected: filterMode == TimeLogFilterMode.days14,
+              onSelected: (_) => onChanged(TimeLogFilterMode.days14),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: const Text('30 days'),
+              selected: filterMode == TimeLogFilterMode.days30,
+              onSelected: (_) => onChanged(TimeLogFilterMode.days30),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: const Text('90 days'),
+              selected: filterMode == TimeLogFilterMode.days90,
+              onSelected: (_) => onChanged(TimeLogFilterMode.days90),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.date_range, size: 16),
+              label: Text(customLabel),
+              selected: filterMode == TimeLogFilterMode.custom,
+              onSelected: (_) => onPickCustomRange(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -442,7 +579,8 @@ class _TagBreakdownSection extends StatelessWidget {
     final theme = Theme.of(context);
     if (tags.isEmpty) {
       return Text(
-        'No focus time logged yet. Select tags on the Focus tab before starting the timer.',
+        'No focus time logged yet. '
+        'Select tags on the Focus tab before starting the timer.',
         style: theme.textTheme.bodySmall?.copyWith(
           fontStyle: FontStyle.italic,
         ),
@@ -484,7 +622,8 @@ class _TagBreakdownSection extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${TimeLogAnalyticsHelper.formatHoursMinutes(tag.minutes)} ($pct%)',
+                  '${TimeLogAnalyticsHelper.formatHoursMinutes(tag.minutes)} '
+                  '($pct%)',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -549,7 +688,7 @@ class _PeakHoursChart extends StatelessWidget {
                     if (hour % 6 == 0) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '${hour.toString().padLeft(2, '0')}',
+                        hour.toString().padLeft(2, '0'),
                         style: theme.textTheme.labelSmall,
                       ),
                     ] else
@@ -695,6 +834,7 @@ class _DayDetailHeader extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onPickDate,
+    required this.onAddTime,
   });
 
   final String label;
@@ -705,6 +845,7 @@ class _DayDetailHeader extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback? onNext;
   final VoidCallback onPickDate;
+  final VoidCallback onAddTime;
 
   @override
   Widget build(BuildContext context) {
@@ -732,6 +873,11 @@ class _DayDetailHeader extends StatelessWidget {
                 ),
               ),
               IconButton(
+                icon: const Icon(Icons.add_circle_outline, size: 20),
+                onPressed: onAddTime,
+                tooltip: 'Add focus time',
+              ),
+              IconButton(
                 icon: const Icon(Icons.chevron_left, size: 20),
                 onPressed: onPrevious,
                 tooltip: 'Previous day',
@@ -755,7 +901,8 @@ class _DayDetailHeader extends StatelessWidget {
             runSpacing: 4,
             children: [
               Text(
-                'Focus: ${TimeLogAnalyticsHelper.formatHoursMinutes(totalMinutes)}',
+                'Focus: '
+                '${TimeLogAnalyticsHelper.formatHoursMinutes(totalMinutes)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
@@ -820,11 +967,13 @@ class _HourTimeline extends StatelessWidget {
     required this.hourLogs,
     required this.parseColor,
     required this.selectedDate,
+    required this.onEditLog,
   });
 
   final Map<int, List<HourlyLog>> hourLogs;
   final Color Function(String hex) parseColor;
   final DateTime selectedDate;
+  final ValueChanged<HourlyLog> onEditLog;
 
   @override
   Widget build(BuildContext context) {
@@ -885,24 +1034,43 @@ class _HourTimeline extends StatelessWidget {
                       runSpacing: 6,
                       children: logs.map((log) {
                         final color = parseColor(log.tagColorHex);
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
+                        return Tooltip(
+                          message: 'Tap to edit or delete',
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: color.withValues(alpha: 0.45),
-                            ),
-                          ),
-                          child: Text(
-                            '${log.tagIcon} ${log.tagName} (${log.durationMinutes}m)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: color,
+                            onTap: () => onEditLog(log),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: color.withValues(alpha: 0.45),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${log.tagIcon} ${log.tagName} '
+                                    '(${log.durationMinutes}m)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: color,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.edit_outlined,
+                                    size: 11,
+                                    color: color.withValues(alpha: 0.7),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );

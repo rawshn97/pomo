@@ -58,5 +58,24 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('shows Add focus time button and opens dialog on tap',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: TrackerShellPage(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final addBtn = find.byTooltip('Add focus time manually');
+      expect(addBtn, findsOneWidget);
+
+      await tester.tap(addBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add Focus Time'), findsOneWidget);
+      expect(find.text('Log Time'), findsOneWidget);
+    });
   });
 }

@@ -126,9 +126,9 @@ class TimerCubit extends Cubit<TimerState> {
   /// or updating it with the final elapsed time (if 1 minute or more).
   /// Called when resetting the timer, changing/clearing tasks, or changing laps.
   ///
-  /// When [activeLogPageId] is still null (create at start failed or is in
-  /// flight), still call [NotionSyncService.updateSessionRecord] so auto-
-  /// advance lap changes do not drop completed focus time.
+  /// When [TimerState.activeLogPageId] is still null (create at start failed
+  /// or is in flight), still call [NotionSyncService.updateSessionRecord]
+  /// so auto-advance lap changes do not drop completed focus time.
   void _finalizeSession() {
     if (!Prefs.enableTimeTracker) return;
     if (state.activeTask == null) return;

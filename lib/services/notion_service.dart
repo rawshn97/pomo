@@ -74,8 +74,8 @@ class NotionService {
       }
     }
 
-    // On native platforms with a direct Notion integration token (secret_ or ntn_),
-    // connect directly to Notion API without requiring a third-party proxy.
+    // On native platforms with a direct Notion integration token
+    // (secret_ or ntn_), connect directly to Notion API without proxy.
     final apiKey = Prefs.notionApiKey.trim();
     final isDirectNotionToken =
         apiKey.startsWith('secret_') || apiKey.startsWith('ntn_');

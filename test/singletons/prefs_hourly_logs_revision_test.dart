@@ -47,5 +47,26 @@ void main() {
       ]);
       expect(Prefs.hourlyLogsRevision.value, before + 1);
     });
+
+    test('bumps when deleteHourlyLog removes a log', () async {
+      final log = HourlyLog(
+        id: 'hlog_to_delete',
+        dateStr: '2026-09-14',
+        hour: 16,
+        tagId: 'tag_admin',
+        tagName: 'Admin & Errands',
+        tagIcon: '📝',
+        tagColorHex: '#78909C',
+        durationMinutes: 20,
+        loggedAt: DateTime.utc(2026, 9, 14, 16),
+      );
+      await Prefs.saveHourlyLog(log);
+      expect(Prefs.hourlyLogs, hasLength(1));
+
+      final before = Prefs.hourlyLogsRevision.value;
+      await Prefs.deleteHourlyLog('hlog_to_delete');
+      expect(Prefs.hourlyLogs, isEmpty);
+      expect(Prefs.hourlyLogsRevision.value, before + 1);
+    });
   });
 }

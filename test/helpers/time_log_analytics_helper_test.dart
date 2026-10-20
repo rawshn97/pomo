@@ -28,15 +28,17 @@ void main() {
     test('excludes auto Resting logs from focus totals', () {
       final logs = [
         _log(
-            dateStr: '2026-09-14',
-            hour: 2,
-            tagId: 'tag_sleep',
-            notes: 'Resting'),
+          dateStr: '2026-09-14',
+          hour: 2,
+          tagId: 'tag_sleep',
+          notes: 'Resting',
+        ),
         _log(
-            dateStr: '2026-09-14',
-            hour: 10,
-            tagId: 'tag_deep_work',
-            minutes: 50),
+          dateStr: '2026-09-14',
+          hour: 10,
+          tagId: 'tag_deep_work',
+          minutes: 50,
+        ),
       ];
 
       expect(TimeLogAnalyticsHelper.totalMinutes(logs), 50);
@@ -46,10 +48,11 @@ void main() {
       final logs = [
         _log(dateStr: '2026-09-14', hour: 9, tagId: 'tag_coding', minutes: 30),
         _log(
-            dateStr: '2026-09-14',
-            hour: 10,
-            tagId: 'tag_deep_work',
-            minutes: 60),
+          dateStr: '2026-09-14',
+          hour: 10,
+          tagId: 'tag_deep_work',
+          minutes: 60,
+        ),
         _log(dateStr: '2026-09-14', hour: 11, tagId: 'tag_coding', minutes: 15),
       ];
 
@@ -63,13 +66,14 @@ void main() {
 
     test('hourTotals aggregates across the period', () {
       final logs = [
-        _log(dateStr: '2026-09-14', hour: 9, tagId: 'tag_coding', minutes: 25),
-        _log(dateStr: '2026-09-15', hour: 9, tagId: 'tag_coding', minutes: 25),
+        _log(dateStr: '2026-09-14', hour: 9, tagId: 'tag_coding'),
+        _log(dateStr: '2026-09-15', hour: 9, tagId: 'tag_coding'),
         _log(
-            dateStr: '2026-09-14',
-            hour: 14,
-            tagId: 'tag_deep_work',
-            minutes: 50),
+          dateStr: '2026-09-14',
+          hour: 14,
+          tagId: 'tag_deep_work',
+          minutes: 50,
+        ),
       ];
 
       final totals = TimeLogAnalyticsHelper.hourTotals(logs);
@@ -79,9 +83,9 @@ void main() {
 
     test('computeStreak counts consecutive days with focus time', () {
       final logs = [
-        _log(dateStr: '2026-09-12', hour: 9, tagId: 'tag_coding', minutes: 25),
-        _log(dateStr: '2026-09-13', hour: 9, tagId: 'tag_coding', minutes: 25),
-        _log(dateStr: '2026-09-14', hour: 9, tagId: 'tag_coding', minutes: 25),
+        _log(dateStr: '2026-09-12', hour: 9, tagId: 'tag_coding'),
+        _log(dateStr: '2026-09-13', hour: 9, tagId: 'tag_coding'),
+        _log(dateStr: '2026-09-14', hour: 9, tagId: 'tag_coding'),
       ];
 
       final streak = TimeLogAnalyticsHelper.computeStreak(
@@ -95,10 +99,11 @@ void main() {
       final logs = [
         _log(dateStr: '2026-09-13', hour: 9, tagId: 'tag_coding', minutes: 60),
         _log(
-            dateStr: '2026-09-14',
-            hour: 10,
-            tagId: 'tag_deep_work',
-            minutes: 30),
+          dateStr: '2026-09-14',
+          hour: 10,
+          tagId: 'tag_deep_work',
+          minutes: 30,
+        ),
       ];
 
       final analytics = TimeLogAnalyticsHelper.analyzePeriod(
@@ -112,5 +117,75 @@ void main() {
       expect(analytics.dailySummaries.first.dateStr, '2026-09-14');
       expect(analytics.dailySummaries.last.dateStr, '2026-09-13');
     });
+
+    test('startOfWeekSunday correctly finds Sunday for any day of week', () {
+      // 2026-09-13 is Sunday
+      final sunday = DateTime(2026, 9, 13, 14, 30);
+      final sundayResult = TimeLogAnalyticsHelper.startOfWeekSunday(sunday);
+      expect(sundayResult.year, 2026);
+      expect(sundayResult.month, 9);
+      expect(sundayResult.day, 13);
+      expect(sundayResult.hour, 0);
+      expect(sundayResult.minute, 0);
+
+      // 2026-09-16 is Wednesday
+      final wednesday = DateTime(2026, 9, 16, 9, 15);
+      final wedResult = TimeLogAnalyticsHelper.startOfWeekSunday(wednesday);
+      expect(wedResult.day, 13);
+
+      // 2026-09-19 is Saturday
+      final saturday = DateTime(2026, 9, 19, 23, 59);
+      final satResult = TimeLogAnalyticsHelper.startOfWeekSunday(saturday);
+      expect(satResult.day, 13);
+    });
+
+    test(
+      'analyzeDateRange aggregates accurately across custom date boundaries',
+      () {
+        final logs = [
+          _log(
+            dateStr: '2026-09-10',
+            hour: 8,
+            tagId: 'tag_coding',
+            minutes: 30,
+          ),
+          _log(
+            dateStr: '2026-09-13',
+            hour: 10,
+            tagId: 'tag_deep_work',
+            minutes: 60,
+          ),
+          _log(
+            dateStr: '2026-09-15',
+            hour: 14,
+            tagId: 'tag_coding',
+            minutes: 45,
+          ),
+          _log(
+            dateStr: '2026-09-20',
+            hour: 16,
+            tagId: 'tag_reading',
+            minutes: 90,
+          ),
+        ];
+
+        // Filter from Sunday 2026-09-13 to Wednesday 2026-09-16 (4 days)
+        final start = DateTime(2026, 9, 13);
+        final end = DateTime(2026, 9, 16);
+        final analytics = TimeLogAnalyticsHelper.analyzeDateRange(
+          logs: logs,
+          start: start,
+          end: end,
+          today: end,
+        );
+
+        expect(analytics.periodDays, 4);
+        expect(analytics.totalMinutes, 105);
+        expect(analytics.activeDays, 2);
+        expect(analytics.dailySummaries, hasLength(4));
+        expect(analytics.dailySummaries.first.dateStr, '2026-09-16');
+        expect(analytics.dailySummaries.last.dateStr, '2026-09-13');
+      },
+    );
   });
 }

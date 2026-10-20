@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart';
@@ -9,7 +8,6 @@ import 'package:pomo/helpers/hourly_log_writer.dart';
 import 'package:pomo/helpers/notification_helper.dart';
 import 'package:pomo/helpers/sound_helper.dart';
 import 'package:pomo/services/android_notification_service.dart';
-import 'package:pomo/services/local_notification_service.dart';
 import 'package:pomo/services/web_pwa_service.dart';
 import 'package:pomo/singletons/prefs.dart';
 
@@ -126,29 +124,7 @@ mixin HookHelper {
       '${block.hour} (${block.date})',
     );
 
-    // 1. Show macOS local notification first (tap opens hourly log dialog);
-    // the banner must never depend on the audio player finishing.
-    if (!kIsWeb &&
-        Platform.isMacOS &&
-        NotificationHelper.shouldShowDesktopHourlyNotification(
-          enableDesktopNotifications: Prefs.enableDesktopNotifications,
-          enableTimeTracker: Prefs.enableTimeTracker,
-          enableQuietHours: Prefs.enableQuietHours,
-          quietHoursStart: Prefs.quietHoursStart,
-          quietHoursEnd: Prefs.quietHoursEnd,
-          now: now,
-        )) {
-      try {
-        await LocalNotificationService.instance.showHourlyReminder(
-          hour: block.hour,
-          date: block.date,
-        );
-      } catch (e) {
-        Logger().w('HookHelper macOS notification failed: $e');
-      }
-    }
-
-    // 2. Show native foreground notification on Android
+    // 1. Show native foreground notification on Android
     try {
       await AndroidNotificationService().showHourlyReminderNotification(
         hour: block.hour,

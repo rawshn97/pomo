@@ -205,16 +205,30 @@ class TimeLogAnalyticsHelper {
     return streak;
   }
 
-  static PeriodAnalytics analyzePeriod({
+  /// Returns Sunday 00:00:00 for the week containing [date].
+  ///
+  /// In Dart, Monday is 1 and Sunday is 7. Thus (weekday % 7) yields 0
+  /// on Sunday, 1 on Monday, and 6 on Saturday.
+  static DateTime startOfWeekSunday(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    final daysSinceSunday = d.weekday % 7;
+    return d.subtract(Duration(days: daysSinceSunday));
+  }
+
+  /// Aggregates focus time between explicit [start] and [end] dates
+  /// (inclusive).
+  static PeriodAnalytics analyzeDateRange({
     required Iterable<HourlyLog> logs,
-    required int periodDays,
+    required DateTime start,
+    required DateTime end,
     DateTime? today,
   }) {
     final now = today ?? DateTime.now();
-    final end = DateTime(now.year, now.month, now.day);
-    final start = end.subtract(Duration(days: periodDays - 1));
-    final startStr = dateStr(start);
-    final endStr = dateStr(end);
+    final startDay = DateTime(start.year, start.month, start.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+    final startStr = dateStr(startDay);
+    final endStr = dateStr(endDay);
+    final periodDays = endDay.difference(startDay).inDays + 1;
 
     final periodLogs = focusLogs(logs).where((log) {
       return log.dateStr.compareTo(startStr) >= 0 &&
@@ -223,8 +237,8 @@ class TimeLogAnalyticsHelper {
 
     final dailySummaries = dailySummariesForRange(
       logs: logs,
-      start: start,
-      end: end,
+      start: startDay,
+      end: endDay,
     );
     final activeDays =
         dailySummaries.where((day) => day.totalMinutes > 0).length;
@@ -239,6 +253,22 @@ class TimeLogAnalyticsHelper {
       tagBreakdown: tagBreakdown(periodLogs),
       hourTotals: hourTotals(periodLogs),
       dailySummaries: dailySummaries,
+    );
+  }
+
+  static PeriodAnalytics analyzePeriod({
+    required Iterable<HourlyLog> logs,
+    required int periodDays,
+    DateTime? today,
+  }) {
+    final now = today ?? DateTime.now();
+    final end = DateTime(now.year, now.month, now.day);
+    final start = end.subtract(Duration(days: periodDays - 1));
+    return analyzeDateRange(
+      logs: logs,
+      start: start,
+      end: end,
+      today: now,
     );
   }
 

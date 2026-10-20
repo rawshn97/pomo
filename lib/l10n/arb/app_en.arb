@@ -148,7 +148,7 @@
     "overlayCorner": "Overlay position",
     "overlayCornerDescription": "Default corner for the floating timer widget",
     "enableDesktopNotifications": "Desktop notifications",
-    "enableDesktopNotificationsDescription": "Notify on hourly check-ins and when work or break laps end",
+    "enableDesktopNotificationsDescription": "Notify when work or break laps end",
     "launchAtLogin": "Launch at login",
     "launchAtLoginDescription": "Start Pomo in the menu bar when you log in (window stays hidden)",
     "notionIntegration": "Notion Integration",

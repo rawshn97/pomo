@@ -952,6 +952,12 @@ class Prefs {
     hourlyLogs = current;
   }
 
+  static Future<void> deleteHourlyLog(String logId) async {
+    final current = List<HourlyLog>.from(hourlyLogs)
+      ..removeWhere((e) => e.id == logId);
+    hourlyLogs = current;
+  }
+
   static void resetTimer() {
     Prefs().sharedPreferences.remove(_timerStatusVarName);
     Prefs().sharedPreferences.remove(_durationVarName);

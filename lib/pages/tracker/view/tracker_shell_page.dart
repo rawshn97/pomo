@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pomo/helpers/notion_url_helper.dart';
+import 'package:pomo/pages/tracker/view/manual_time_entry_dialog.dart';
 import 'package:pomo/pages/tracker/view/time_log_history_view.dart';
 import 'package:pomo/singletons/prefs.dart';
 import 'package:pomo/widgets/android_tracker_status_prompt.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Read-only time log history and analytics tab.
+/// Read-only time log history and analytics tab with manual time entry.
 class TrackerShellPage extends StatelessWidget {
   const TrackerShellPage({super.key});
 
@@ -25,6 +26,10 @@ class TrackerShellPage extends StatelessWidget {
     launchUrl(Uri.parse(url));
   }
 
+  void _addManualTime(BuildContext context) {
+    ManualTimeEntryDialog.show(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AndroidTrackerStatusPrompt(
@@ -35,6 +40,11 @@ class TrackerShellPage extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           actions: [
+            IconButton(
+              tooltip: 'Add focus time manually',
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => _addManualTime(context),
+            ),
             if (Prefs.enableNotionSync)
               IconButton(
                 tooltip: 'Open Notion Hourly Timeline',

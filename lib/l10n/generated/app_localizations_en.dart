@@ -241,7 +241,7 @@ class SEn extends S {
 
   @override
   String get enableDesktopNotificationsDescription =>
-      'Notify on hourly check-ins and when work or break laps end';
+      'Notify when work or break laps end';
 
   @override
   String get launchAtLogin => 'Launch at login';

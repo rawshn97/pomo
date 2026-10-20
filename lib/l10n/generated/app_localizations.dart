@@ -522,7 +522,7 @@ abstract class S {
   /// No description provided for @enableDesktopNotificationsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Notify on hourly check-ins and when work or break laps end'**
+  /// **'Notify when work or break laps end'**
   String get enableDesktopNotificationsDescription;
 
   /// No description provided for @launchAtLogin.
