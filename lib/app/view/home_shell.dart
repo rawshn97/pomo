@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/pages/settings/settings.dart';
 import 'package:pomo/pages/timer/timer.dart';
@@ -65,26 +66,29 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Widget _shellBody() {
-    return Column(
-      children: [
-        BlocBuilder<TimerCubit, TimerState>(
-          buildWhen: (previous, current) => previous.lap != current.lap,
-          builder: (context, timerState) {
-            return StatusStrip(
-              path: RawshnBrand.statusPath(
-                tabIndex: _selectedIndex,
-                lap: timerState.lap,
-              ),
-            );
-          },
-        ),
-        Expanded(
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: _pages,
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          BlocBuilder<TimerCubit, TimerState>(
+            buildWhen: (previous, current) => previous.lap != current.lap,
+            builder: (context, timerState) {
+              return StatusStrip(
+                path: RawshnBrand.statusPath(
+                  tabIndex: _selectedIndex,
+                  lap: timerState.lap,
+                ),
+              );
+            },
           ),
-        ),
-      ],
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _pages,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -92,62 +96,78 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isWideScreen = width >= 800;
+    final brightness = Theme.of(context).brightness;
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: brightness,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness:
+          brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+    );
 
     if (isWideScreen) {
-      return Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: _onDestinationSelected,
-              labelType: NavigationRailLabelType.all,
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.timer_outlined),
-                  selectedIcon: Icon(Icons.timer),
-                  label: Text('Focus'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.history_outlined),
-                  selectedIcon: Icon(Icons.history),
-                  label: Text('Tracker'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.settings_outlined),
-                  selectedIcon: Icon(Icons.settings),
-                  label: Text('Settings'),
-                ),
-              ],
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
-            Expanded(child: _shellBody()),
-          ],
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyle,
+        child: Scaffold(
+          body: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onDestinationSelected,
+                labelType: NavigationRailLabelType.all,
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.timer_outlined),
+                    selectedIcon: Icon(Icons.timer),
+                    label: Text('Focus'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.history_outlined),
+                    selectedIcon: Icon(Icons.history),
+                    label: Text('Tracker'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings),
+                    label: Text('Settings'),
+                  ),
+                ],
+              ),
+              const VerticalDivider(thickness: 1, width: 1),
+              Expanded(child: _shellBody()),
+            ],
+          ),
         ),
       );
     }
 
-    return Scaffold(
-      body: _shellBody(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onDestinationSelected,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.timer_outlined),
-            selectedIcon: Icon(Icons.timer),
-            label: 'Focus',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Tracker',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Scaffold(
+        body: _shellBody(),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.timer_outlined),
+              selectedIcon: Icon(Icons.timer),
+              label: 'Focus',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history),
+              label: 'Tracker',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

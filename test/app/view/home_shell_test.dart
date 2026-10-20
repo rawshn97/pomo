@@ -7,6 +7,7 @@ import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/pages/tracker/view/tracker_shell_page.dart';
 import 'package:pomo/singletons/prefs.dart';
+import 'package:pomo/widgets/brand/status_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -58,5 +59,23 @@ void main() {
     await tester.tap(find.text('Tracker'));
     await settleIgnoringChildOverflow(tester);
     expect(find.byType(TrackerShellPage), findsOneWidget);
+  });
+
+  testWidgets('StatusStrip respects top safe area padding on mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.padding = const FakeViewPadding(top: 44);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+
+    await tester.pumpWidget(wrap(const HomeShell()));
+    await settleIgnoringChildOverflow(tester);
+
+    final statusStrip = find.byType(StatusStrip);
+    expect(statusStrip, findsOneWidget);
+    final topLeft = tester.getTopLeft(statusStrip);
+    expect(topLeft.dy, greaterThanOrEqualTo(44.0));
   });
 }
