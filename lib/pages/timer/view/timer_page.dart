@@ -18,9 +18,11 @@ import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/tasks/view/manual_log_dialog.dart';
 import 'package:pomo/pages/tasks/view/notion_tasks_modal.dart';
 import 'package:pomo/pages/timer/timer.dart';
+import 'package:pomo/pages/timer/view/remote_session_presence_banner.dart';
 import 'package:pomo/pages/timer/view/timer_tag_bar.dart';
 import 'package:pomo/services/android_notification_service.dart';
 import 'package:pomo/services/local_notification_service.dart';
+import 'package:pomo/services/remote_session_service.dart';
 import 'package:pomo/services/web_pwa_service.dart';
 import 'package:pomo/singletons/prefs.dart';
 import 'package:pomo/widgets/timer/timer_progress.dart';
@@ -457,6 +459,15 @@ class TimerPage extends StatelessWidget {
             ),
             BlocListener<TimerCubit, TimerState>(
               listener: (context, state) {
+                if (state.status == TimerStatus.running) {
+                  RemoteSessionService().startRepeatingBroadcast(
+                    timerState: state,
+                    settingsState: settingsState,
+                  );
+                } else {
+                  RemoteSessionService().stopRepeatingBroadcast();
+                }
+
                 if (kIsWeb && WebPwaService().isPipActive) {
                   final durationStr = DurationHelper.negativeFormat(
                     duration: state.duration,
@@ -504,6 +515,7 @@ class _TimerViewState extends State<TimerView> {
     super.initState();
     _focusNode = FocusNode();
     AndroidNotificationService().init(context.read<TimerCubit>());
+    RemoteSessionService().startPolling();
     if (kIsWeb) {
       WebPwaService().init();
       WebPwaService().requestNotificationPermission();
@@ -513,6 +525,7 @@ class _TimerViewState extends State<TimerView> {
   @override
   void dispose() {
     _focusNode.dispose();
+    RemoteSessionService().stopPolling();
     if (kIsWeb) {
       WebPwaService().closePip();
     }
@@ -659,6 +672,7 @@ class _TimerViewState extends State<TimerView> {
                             children: [
                               const TimerTagBar(),
                               const _ActiveTaskPill(),
+                              const RemoteSessionPresenceBanner(),
                               Expanded(
                                 child: Stack(
                                   alignment: Alignment.center,

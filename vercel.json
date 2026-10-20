@@ -7,6 +7,10 @@
       "destination": "/api/notion?path=:path*"
     },
     {
+      "source": "/api/session",
+      "destination": "/api/session"
+    },
+    {
       "source": "/focus/:path*",
       "destination": "/focus/index.html"
     },

@@ -3,79 +3,69 @@
 **Parent index:** [`SPEC.md`](SPEC.md)  
 **Rule:** Do not copy these into `specs/*.md` until the behavior is in `main` and verified.
 
-This file tracks the active specification for the **Manual Time Log Editing, Week-To-Date & Custom Range Filters, and macOS Hourly Notification Removal** enhancements.
+This file tracks the active specifications for:
+1. Android Notification UX Overhaul (Activity Tag & Task Surfacing, BigTextStyle, Action Controls)
+2. Cross-Device Focus Presence in UI (Live Session Relay, Presence Pill/Banner)
+3. Notion Time Logs Untasked Session Syncing & Open-Source Cleanliness
 
 ---
 
-## 1. Manual Time Log Entry & Editing
+## 1. Android Notification UX Overhaul
 
 ### Problem
-Users previously had to rely on the Focus timer or the deprecated hourly logging dialog to log time. When focus time happens away from the computer or phone, or when a session duration needs adjustment, there is currently no simple interface on the Time Log tab to record or adjust past focus logs.
+The ongoing timer notification on Android only showed the countdown time and generic session name (`Work Session`), omitting the user's active activity tag (e.g. `😴 Sleep & Rest`) and active Notion task. Furthermore, when paused, the action title said `Play` instead of the Android standard `Resume`.
 
 ### Requirements
-1. **Manual Entry (`ManualTimeEntryDialog`):**
-   - Affordance: "+ Add Time" button on the Time Log tab (`TrackerShellPage`).
-   - Fields:
-     - Date: Defaults to current date or selected date; editable via date picker.
-     - Start Time & End Time: TimeOfDay pickers with automatic duration calculation.
-     - Activity Tag: Selectable single tag from `Prefs.trackerTags`.
-     - Optional notes.
-   - Persistence:
-     - Slices the time interval across hourly boundaries using `HourlyLogWriter.creditTimerMinutes`.
-     - Saves records to `Prefs.hourlyLogs` and triggers immediate UI refresh via `Prefs.hourlyLogsRevision`.
-     - Queues or synchronizes to Notion Hourly Timeline DB when Notion sync is enabled.
-2. **Edit Existing Log (`EditTimeLogDialog`):**
-   - Affordance: Tapping any logged activity chip in `_HourTimeline`.
-   - Fields:
-     - Duration in minutes: Editable via quick adjustments (-15m, -5m, +5m, +15m) or direct input.
-     - Tag: Re-selectable from available `Prefs.trackerTags`.
-     - Notes: Editable text.
-     - Delete action: Deletes the log from `Prefs.hourlyLogs` (and archives Notion page if synced).
-   - Persistence:
-     - Updates `Prefs.hourlyLogs` and bumps `Prefs.hourlyLogsRevision`.
-     - Updates Notion page via `NotionSyncService.syncHourlyLog`.
+1. **Collapsed Notification:**
+   - `subText`: `Focus Timer • Lap #N`
+   - `contentTitle`: `24:40` when running, or `24:40 (Paused)` when paused.
+   - `contentText`: `${tag} • ${task}` (or `${tag} • ${lapText}`, `${task} • ${lapText}`, or `${lapText}`).
+2. **Expanded View (`NotificationCompat.BigTextStyle`):**
+   - Multi-line structured readout:
+     - `Activity: 😴 Sleep & Rest`
+     - `Task: Task title` (or `No task selected`)
+     - `Session: Work Session (Lap #1)`
+3. **Actions:**
+   - Running: `Pause` (`ic_media_pause`) and `Stop` (`ic_delete`).
+   - Paused: `Resume` (`ic_media_play`) and `Stop` (`ic_delete`).
+4. **Cleanliness:**
+   - Remove dead custom layout `notification_timer.xml`.
 
 ---
 
-## 2. Removal of Hourly Reminder Notifications on macOS
+## 2. Cross-Device Focus Presence in UI
 
 ### Problem
-Hourly check-in reminder banners continue to trigger in macOS builds via `HookHelper._checkAndTriggerHourlyReminder` calling `LocalNotificationService.instance.showHourlyReminder`. Since manual hourly logging has been deprecated, these banners are redundant distractions.
+When a user begins a focus session on mobile or laptop, other linked devices (e.g. macOS desktop app or Web PWA) lacked any indication that a focus session was currently underway on their account.
 
 ### Requirements
-1. Remove `LocalNotificationService.instance.showHourlyReminder` invocations from `HookHelper`.
-2. Keep desktop notifications exclusively for timer events (work and break lap completions).
-3. Update localization string for `enableDesktopNotificationsDescription` to: `"Notify when work or break laps end"`.
+1. **Serverless Presence Relay (`/api/session`):**
+   - Authenticated endpoint on Vercel proxy accepting `FOCUS_ACCESS_TOKEN` or Notion token.
+   - `POST /api/session`: Ingests heartbeat state (`deviceId`, `deviceName`, `status`, `lap`, `lapNumber`, `remainingSeconds`, `totalSeconds`, `tagName`, `tagIcon`, `taskTitle`).
+   - `GET /api/session`: Returns `{ active: true, session: ... }` if a session was reported within 45 seconds; otherwise `{ active: false }`.
+   - `DELETE /api/session`: Immediately clears session upon timer stop or reset.
+2. **Client Polling & Broadcasting (`RemoteSessionService`):**
+   - Active device broadcasts heartbeat every 10 seconds while running.
+   - Idle device polls every 10 seconds and notifies `RemoteSessionPresenceBanner`.
+   - Ignores heartbeats originating from the local device (`Prefs.deviceId`).
+3. **Presence UI Banner (`RemoteSessionPresenceBanner`):**
+   - Displayed on `TimerPage` when local timer is idle and remote session is active.
+   - Displays device badge (`Mobile is focusing`, `macOS is focusing`), counting down remaining time, tag chip, and task details.
+   - Hides automatically when local timer begins running or remote session stops.
 
 ---
 
-## 3. Time Log Analytics Filters: Week-to-Date & Custom Range
+## 3. Notion Time Logs Untasked Session Syncing & Open-Source Cleanliness
 
 ### Problem
-The Time Log tab only offers fixed backward-looking periods (7, 14, 30, 90 days). Users need to view week-to-date focus time (Sunday through today) and arbitrary custom date ranges (e.g. specific project sprint or month).
+Notion `Time Logs` table stopped recording sessions after October 4 because `TimerCubit._createNotionRecord` strictly checked `if (state.activeTask == null) return;`. Recent focus time was logged only with activity tags into `Hourly Timeline` and local storage, leaving `Time Logs` incomplete for untasked sessions.
 
 ### Requirements
-1. **`TimeLogAnalyticsHelper` additions:**
-   - `startOfWeekSunday(DateTime date)`: Returns the preceding Sunday (or same day if today is Sunday) at 00:00:00.
-   - `analyzeDateRange`: Accepts explicit `DateTime start` and `DateTime end`, computes rollup metrics, daily summaries, tag breakdowns, and active streak.
-2. **Filter UI on `TimeLogHistoryView`:**
-   - Filter options:
-     - `This Week`: Sunday through today.
-     - `7 Days`, `14 Days`, `30 Days`, `90 Days`: Standard trailing windows.
-     - `Custom Range`: Opens Flutter `showDateRangePicker` and renders custom date label (e.g., `Oct 1 - Oct 15`).
-
----
-
-## 4. Multi-Platform Deployment Plan
-1. **Verification:** `./scripts/verify.sh` (formatting, analysis, unit/widget tests).
-2. **macOS:**
-   - Compile production release bundle.
-   - Remove existing `/Applications/Pomo.app`.
-   - Copy fresh `Pomo.app` to `/Applications/`.
-   - Package distribution DMG via `./build_macos_dmg.sh`.
-3. **Android:**
-   - Bump version to `1.4.1+5`.
-   - Run `./scripts/deploy_android_update.sh`.
-4. **Web PWA:**
-   - Deploy to Vercel via global `vercel deploy --prod`.
-5. **Git:** Commit and push to `origin/main`.
+1. **Untasked Time Log Creation:**
+   - `NotionService.logSession` allows optional `task` parameter and uses `sessionTitle` (`"${minutes}m - ${tagName}"`).
+   - Slices row to `Time Logs` without task relation when `activeTask` is null.
+   - Skips patching task cumulative time when no task is linked.
+2. **TimerCubit Integration:**
+   - `_createNotionRecord`, `_updateNotionRecord`, and `_finalizeSession` record all work sessions to `Time Logs`, populating primary tag display.
+3. **Open-Source Readiness:**
+   - Verify zero credentials, private Notion tokens, or personal database IDs are hardcoded in the codebase.

@@ -1,6 +1,6 @@
 {
-  "versionCode": 6,
-  "versionName": "1.4.2",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.2/pomo-production.apk",
-  "changelog": "Fix top status bar overlap and safe area inset on mobile devices"
+  "versionCode": 7,
+  "versionName": "1.4.3",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.3/pomo-production.apk",
+  "changelog": "Android notification UX overhaul with activity tag and task details, cross-device focus presence sync, and untasked session logging to Notion Time Logs"
 }

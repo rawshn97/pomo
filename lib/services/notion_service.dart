@@ -45,7 +45,6 @@ class NotionService {
   );
 
   /// Returns the base URL for Notion API requests.
-  @visibleForTesting
   String getBaseUrl() => _getBaseUrl();
 
   String _getBaseUrl() {
@@ -1031,9 +1030,10 @@ class NotionService {
   /// `Time (hours)` / `Time (minutes)`. Pass `creditMinutes: 0` to create or
   /// update the row without touching task cumulative time.
   Future<({bool success, String? pageId})> logSession({
-    required NotionTask task,
     required int creditMinutes,
     required DateTime endedAt,
+    NotionTask? task,
+    String? sessionTitle,
     String? customExternalId,
     String? existingLogPageId,
     int? totalDurationMinutes,
@@ -1045,6 +1045,7 @@ class NotionService {
 
     final totalDuration = totalDurationMinutes ?? creditMinutes;
     var pageId = existingLogPageId;
+    final displayTitle = sessionTitle ?? task?.title ?? 'Focus Session';
 
     if (pageId != null && pageId.isNotEmpty) {
       try {
@@ -1054,7 +1055,7 @@ class NotionService {
             'Name': {
               'title': [
                 {
-                  'text': {'content': '${totalDuration}m - ${task.title}'},
+                  'text': {'content': '${totalDuration}m - $displayTitle'},
                 },
               ],
             },
@@ -1084,8 +1085,9 @@ class NotionService {
     }
 
     if (pageId == null || pageId.isEmpty) {
+      final taskId = task?.id ?? 'untasked';
       final externalId = customExternalId ??
-          'sess_${task.id}_${endedAt.millisecondsSinceEpoch}';
+          'sess_${taskId}_${endedAt.millisecondsSinceEpoch}';
 
       // 1. Idempotency check
       final existingPageId = await checkIdempotency(externalId);
@@ -1098,40 +1100,45 @@ class NotionService {
       } else {
         // 2. Create Time Logs row
         final timeLogsUrl = '${_getBaseUrl()}pages';
+        final properties = <String, dynamic>{
+          'Name': {
+            'title': [
+              {
+                'text': {'content': '${totalDuration}m - $displayTitle'},
+              },
+            ],
+          },
+          'Duration (min)': {'number': totalDuration},
+          'Logged At': {
+            'date': {'start': endedAt.toUtc().toIso8601String()},
+          },
+          'Source': {
+            'rich_text': [
+              {
+                'text': {'content': 'pomo'},
+              },
+            ],
+          },
+          'External ID': {
+            'rich_text': [
+              {
+                'text': {'content': externalId},
+              },
+            ],
+          },
+        };
+
+        if (task != null && task.id.isNotEmpty) {
+          properties['Task'] = {
+            'relation': [
+              {'id': task.id},
+            ],
+          };
+        }
+
         final logPayload = {
           'parent': {'database_id': timeLogsDbId},
-          'properties': {
-            'Name': {
-              'title': [
-                {
-                  'text': {'content': '${totalDuration}m - ${task.title}'},
-                },
-              ],
-            },
-            'Task': {
-              'relation': [
-                {'id': task.id},
-              ],
-            },
-            'Duration (min)': {'number': totalDuration},
-            'Logged At': {
-              'date': {'start': endedAt.toUtc().toIso8601String()},
-            },
-            'Source': {
-              'rich_text': [
-                {
-                  'text': {'content': 'pomo'},
-                },
-              ],
-            },
-            'External ID': {
-              'rich_text': [
-                {
-                  'text': {'content': externalId},
-                },
-              ],
-            },
-          },
+          'properties': properties,
         };
 
         try {
@@ -1154,8 +1161,9 @@ class NotionService {
       }
     }
 
-    // 3-4. Credit task cumulative time only when there is a positive delta.
-    if (creditMinutes <= 0) {
+    // 3-4. Credit task cumulative time only when there is a positive delta
+    // and task is present.
+    if (task == null || creditMinutes <= 0) {
       return (success: true, pageId: pageId);
     }
 

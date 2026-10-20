@@ -18,9 +18,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ManualTimeEntryDialog(
-              initialDate: null,
-            ),
+            body: ManualTimeEntryDialog(),
           ),
         ),
       );

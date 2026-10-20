@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -185,6 +186,7 @@ class Prefs {
   static const String _enableDesktopNotificationsVarName =
       'pomo_enable_desktop_notifications';
   static const String _launchAtLoginVarName = 'pomo_launch_at_login';
+  static const String _deviceIdVarName = 'pomo_device_id';
   static const String _windowWidthVarName = 'pomo_window_width';
   static const String _windowHeightVarName = 'pomo_window_height';
 
@@ -964,5 +966,22 @@ class Prefs {
     Prefs().sharedPreferences.remove(_lapNumberVarName);
     Prefs().sharedPreferences.remove(_timerLapVarName);
     clearSessionSyncState();
+  }
+
+  /// Persistent random device ID identifying this client instance for
+  /// cross-device presence.
+  static String get deviceId {
+    var id = Prefs().sharedPreferences.getString(_deviceIdVarName);
+    if (id == null || id.isEmpty) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final rand = Random().nextInt(999999);
+      id = 'dev_${now}_$rand';
+      Prefs().sharedPreferences.setString(_deviceIdVarName, id);
+    }
+    return id;
+  }
+
+  static set deviceId(String value) {
+    Prefs().sharedPreferences.setString(_deviceIdVarName, value);
   }
 }

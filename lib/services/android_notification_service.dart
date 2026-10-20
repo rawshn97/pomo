@@ -145,17 +145,76 @@ class AndroidNotificationService {
     }
   }
 
-  Future<void> updateTimerState({
+  /// Arguments passed to native `startForeground` / `updateNotification`.
+  /// Formatted according to Android Material Notification UX standards.
+  @visibleForTesting
+  static Map<String, Object?> timerNotificationArgs({
     required TimerState timerState,
     required SettingsState settingsState,
-  }) async {
-    if (kIsWeb || !Platform.isAndroid) return;
-
+  }) {
     final formattedTime = DurationHelper.negativeFormat(
       duration: timerState.duration,
       lap: timerState.lap,
       settingsState: settingsState,
     );
+
+    final isRunning = timerState.status == TimerStatus.running;
+    final lapText = timerState.lap == TimerLap.work
+        ? 'Work Session'
+        : (timerState.lap == TimerLap.shortBreak
+            ? 'Short Break'
+            : 'Long Break');
+
+    final primaryTag = timerState.activeTags.isNotEmpty
+        ? '${timerState.activeTags.first.icon} '
+            '${timerState.activeTags.first.name}'
+        : null;
+
+    final taskTitle = (timerState.activeTask?.title.isNotEmpty ?? false)
+        ? timerState.activeTask!.title
+        : null;
+
+    final contentTitle = isRunning ? formattedTime : '$formattedTime (Paused)';
+
+    final subText = timerState.lapNumber > 0
+        ? 'Focus Timer • Lap #${timerState.lapNumber}'
+        : 'Focus Timer';
+
+    final String contentText;
+    if (primaryTag != null && taskTitle != null) {
+      contentText = '$primaryTag • $taskTitle';
+    } else if (primaryTag != null) {
+      contentText = '$primaryTag • $lapText';
+    } else if (taskTitle != null) {
+      contentText = '$taskTitle • $lapText';
+    } else {
+      contentText = lapText;
+    }
+
+    final lapSuffix =
+        timerState.lapNumber > 0 ? ' (Lap #${timerState.lapNumber})' : '';
+    final bigTextLines = [
+      'Activity: ${primaryTag ?? "None selected"}',
+      'Task: ${taskTitle ?? "No task selected"}',
+      'Session: $lapText$lapSuffix',
+    ];
+    final bigText = bigTextLines.join('\n');
+
+    return {
+      'title': contentText,
+      'text': contentTitle,
+      'subText': subText,
+      'bigText': bigText,
+      'isRunning': isRunning,
+      'isHourly': false,
+    };
+  }
+
+  Future<void> updateTimerState({
+    required TimerState timerState,
+    required SettingsState settingsState,
+  }) async {
+    if (kIsWeb || !Platform.isAndroid) return;
 
     final isRunning = timerState.status == TimerStatus.running;
     final isZero = timerState.duration == Duration.zero;
@@ -170,31 +229,17 @@ class AndroidNotificationService {
       return;
     }
 
-    final lapText = timerState.lap == TimerLap.work
-        ? 'Work Session'
-        : (timerState.lap == TimerLap.shortBreak
-            ? 'Short Break'
-            : 'Long Break');
-    final titleText = (timerState.activeTask?.title.isNotEmpty ?? false)
-        ? '$lapText: ${timerState.activeTask!.title}'
-        : lapText;
+    final args = timerNotificationArgs(
+      timerState: timerState,
+      settingsState: settingsState,
+    );
 
     try {
       if (!_isServiceActive && (isRunning || !isZero)) {
         _isServiceActive = true;
-        await _channel.invokeMethod<bool>('startForeground', {
-          'title': titleText,
-          'text': formattedTime,
-          'isRunning': isRunning,
-          'isHourly': false,
-        });
+        await _channel.invokeMethod<bool>('startForeground', args);
       } else if (_isServiceActive) {
-        await _channel.invokeMethod<bool>('updateNotification', {
-          'title': titleText,
-          'text': formattedTime,
-          'isRunning': isRunning,
-          'isHourly': false,
-        });
+        await _channel.invokeMethod<bool>('updateNotification', args);
       }
     } catch (e) {
       // Ignore channel exceptions if native service fails

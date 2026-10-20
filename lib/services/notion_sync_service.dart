@@ -118,34 +118,44 @@ class NotionSyncService {
 
   /// Creates a brand-new Time Log row in Notion for a freshly started session.
   /// Returns the Notion page ID of the created row, or null on failure.
-  /// Fires-and-forgets the move-to-in-progress call.
+  /// Fires-and-forgets the move-to-in-progress call if a task is present.
   ///
   /// Persists a stable [Prefs.activeSessionExternalId] so retries do not create
   /// duplicate rows. Does not credit task cumulative time (credit = 0).
   Future<String?> createSessionRecord({
-    required NotionTask task,
     required DateTime startedAt,
+    NotionTask? task,
+    TrackerTag? primaryTag,
   }) async {
-    if (task.id.isEmpty) return null;
     if (!Prefs.enableNotionSync) return null;
     final apiKey = Prefs.notionApiKey;
     if (!kIsWeb && apiKey.isEmpty) return null;
 
+    final taskId =
+        task?.id ?? (primaryTag != null ? primaryTag.id : 'untasked');
+    final title = task?.title ??
+        (primaryTag != null
+            ? '${primaryTag.icon} ${primaryTag.name}'
+            : 'Focus Session');
+
     final externalId = Prefs.activeSessionExternalId ??
-        'sess_${task.id}_${startedAt.millisecondsSinceEpoch}';
+        'sess_${taskId}_${startedAt.millisecondsSinceEpoch}';
     Prefs.activeSessionExternalId = externalId;
     Prefs.syncedMinutes = 0;
 
     Logger().i(
       'NotionSyncService: Creating session record for '
-      '"${task.title}" (${task.id}) externalId=$externalId...',
+      '"$title" ($taskId) externalId=$externalId...',
     );
 
     try {
-      unawaited(moveToInProgressIfNeeded(task));
+      if (task != null && task.id.isNotEmpty) {
+        unawaited(moveToInProgressIfNeeded(task));
+      }
 
       final result = await NotionService().logSession(
         task: task,
+        sessionTitle: title,
         creditMinutes: 0,
         totalDurationMinutes: 0,
         endedAt: startedAt,
@@ -176,15 +186,13 @@ class NotionSyncService {
   /// Pass [previouslySyncedMinutes] when clearing Prefs before the async call
   /// completes (e.g. task switch).
   Future<({bool success, String? logPageId})> updateSessionRecord({
-    required NotionTask task,
     required Duration totalElapsed,
     required String? existingLogPageId,
+    NotionTask? task,
+    TrackerTag? primaryTag,
     DateTime? endedAt,
     int? previouslySyncedMinutes,
   }) async {
-    if (task.id.isEmpty) {
-      return (success: false, logPageId: null);
-    }
     if (!Prefs.enableNotionSync) {
       return (success: false, logPageId: null);
     }
@@ -204,16 +212,21 @@ class NotionSyncService {
       alreadySynced: alreadySynced,
     );
     final timestamp = endedAt ?? DateTime.now();
+    final title = task?.title ??
+        (primaryTag != null
+            ? '${primaryTag.icon} ${primaryTag.name}'
+            : 'Focus Session');
 
     Logger().i(
       'NotionSyncService: Updating session record '
       '(${totalMinutes}m total, +${creditMinutes}m credit) '
-      'for "${task.title}"...',
+      'for "$title"...',
     );
 
     try {
       final result = await NotionService().logSession(
         task: task,
+        sessionTitle: title,
         creditMinutes: creditMinutes,
         totalDurationMinutes: totalMinutes,
         endedAt: timestamp,
@@ -228,7 +241,8 @@ class NotionSyncService {
           Prefs.syncedMinutes = totalMinutes;
         }
         final currentActive = Prefs.activeTask;
-        if (currentActive != null &&
+        if (task != null &&
+            currentActive != null &&
             currentActive.id == task.id &&
             creditMinutes > 0) {
           final newMath = NotionService.addDuration(
@@ -253,13 +267,15 @@ class NotionSyncService {
         error: e,
         stackTrace: st,
       );
-      _enqueuePendingLog(
-        task: task,
-        durationMinutes: creditMinutes,
-        totalDurationMinutes: totalMinutes,
-        endedAt: timestamp,
-        existingLogPageId: existingLogPageId,
-      );
+      if (task != null) {
+        _enqueuePendingLog(
+          task: task,
+          durationMinutes: creditMinutes,
+          totalDurationMinutes: totalMinutes,
+          endedAt: timestamp,
+          existingLogPageId: existingLogPageId,
+        );
+      }
       return (success: false, logPageId: null);
     }
   }

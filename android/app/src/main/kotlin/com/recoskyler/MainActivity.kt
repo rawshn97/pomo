@@ -155,8 +155,10 @@ class MainActivity : FlutterActivity() {
                     val isRunning = call.argument<Boolean>("isRunning") ?: true
                     val isHourly = call.argument<Boolean>("isHourly") ?: (title.contains("Time Tracker") || title.contains("Check-in"))
                     val payload = call.argument<String>("payload")
+                    val subText = call.argument<String>("subText")
+                    val bigText = call.argument<String>("bigText")
                     // Hourly routes to shade ID 1002; never replaces timer FGS.
-                    TimerForegroundService.startService(this, title, text, isRunning, isHourly, payload)
+                    TimerForegroundService.startService(this, title, text, isRunning, isHourly, payload, subText, bigText)
                     result.success(true)
                 }
                 "showHourlyNotification" -> {
@@ -173,7 +175,9 @@ class MainActivity : FlutterActivity() {
                     val isRunning = call.argument<Boolean>("isRunning") ?: true
                     val isHourly = call.argument<Boolean>("isHourly") ?: (title.contains("Time Tracker") || title.contains("Check-in"))
                     val payload = call.argument<String>("payload")
-                    TimerForegroundService.updateService(this, title, text, isRunning, isHourly, payload)
+                    val subText = call.argument<String>("subText")
+                    val bigText = call.argument<String>("bigText")
+                    TimerForegroundService.updateService(this, title, text, isRunning, isHourly, payload, subText, bigText)
                     result.success(true)
                 }
                 "stopForeground" -> {

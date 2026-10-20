@@ -54,6 +54,8 @@ class TimerForegroundService : Service() {
             isRunning: Boolean,
             isHourly: Boolean = false,
             payload: String? = null,
+            subText: String? = null,
+            bigText: String? = null,
         ) {
             // Hourly is shade-only; never hijack the timer FGS notification.
             if (isHourly) {
@@ -64,6 +66,8 @@ class TimerForegroundService : Service() {
                 action = ACTION_START
                 putExtra("title", title)
                 putExtra("text", text)
+                putExtra("subText", subText)
+                putExtra("bigText", bigText)
                 putExtra("isRunning", isRunning)
                 putExtra("isHourly", false)
             }
@@ -184,7 +188,7 @@ class TimerForegroundService : Service() {
                 context, 2, stopActionIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            val toggleActionTitle = if (isRunning) "Pause" else "Play"
+            val toggleActionTitle = if (isRunning) "Pause" else "Resume"
             val toggleActionIcon = if (isRunning) {
                 android.R.drawable.ic_media_pause
             } else {
@@ -286,6 +290,8 @@ class TimerForegroundService : Service() {
             isRunning: Boolean,
             isHourly: Boolean = false,
             payload: String? = null,
+            subText: String? = null,
+            bigText: String? = null,
         ) {
             if (isHourly) {
                 postHourlyNotification(context, title, text, payload)
@@ -295,6 +301,8 @@ class TimerForegroundService : Service() {
                 action = ACTION_UPDATE
                 putExtra("title", title)
                 putExtra("text", text)
+                putExtra("subText", subText)
+                putExtra("bigText", bigText)
                 putExtra("isRunning", isRunning)
                 putExtra("isHourly", false)
             }
@@ -311,6 +319,8 @@ class TimerForegroundService : Service() {
 
     private var currentTitle: String = "Focus Timer"
     private var currentText: String = "25:00"
+    private var currentSubText: String = "Focus Timer"
+    private var currentBigText: String = "Focus Timer"
     private var isCurrentlyRunning: Boolean = true
 
     override fun onCreate() {
@@ -325,12 +335,16 @@ class TimerForegroundService : Service() {
             ACTION_START -> {
                 currentTitle = intent.getStringExtra("title") ?: currentTitle
                 currentText = intent.getStringExtra("text") ?: currentText
+                currentSubText = intent.getStringExtra("subText") ?: currentSubText
+                currentBigText = intent.getStringExtra("bigText") ?: currentBigText
                 isCurrentlyRunning = intent.getBooleanExtra("isRunning", true)
                 startForegroundNotification()
             }
             ACTION_UPDATE -> {
                 currentTitle = intent.getStringExtra("title") ?: currentTitle
                 currentText = intent.getStringExtra("text") ?: currentText
+                currentSubText = intent.getStringExtra("subText") ?: currentSubText
+                currentBigText = intent.getStringExtra("bigText") ?: currentBigText
                 isCurrentlyRunning = intent.getBooleanExtra("isRunning", true)
                 updateNotification()
             }
@@ -386,7 +400,7 @@ class TimerForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val toggleActionTitle = if (isCurrentlyRunning) "Pause" else "Play"
+        val toggleActionTitle = if (isCurrentlyRunning) "Pause" else "Resume"
         val toggleActionIcon = if (isCurrentlyRunning) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
 
         val coffeeColor = Color.parseColor("#8D6E63") // Warm coffee / mocha accent color
@@ -394,18 +408,20 @@ class TimerForegroundService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(currentText)
             .setContentText(currentTitle)
+            .setSubText(currentSubText)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setColor(coffeeColor)
             .setColorized(false)
+            .setShowWhen(false)
             .setStyle(NotificationCompat.BigTextStyle()
                 .setBigContentTitle(currentText)
-                .bigText(currentTitle))
+                .setSummaryText(currentSubText)
+                .bigText(currentBigText))
             .setContentIntent(openAppPendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSubText("Focus Timer")
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .addAction(toggleActionIcon, toggleActionTitle, togglePendingIntent)
             .addAction(android.R.drawable.ic_delete, "Stop", stopPendingIntent)

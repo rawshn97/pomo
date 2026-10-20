@@ -119,6 +119,7 @@ app.*.map.json
 
 dist/*
 Pomo.dmg
+*.apk
 .vercel
 .gstack/
 .env*

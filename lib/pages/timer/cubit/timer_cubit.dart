@@ -58,23 +58,28 @@ class TimerCubit extends Cubit<TimerState> {
   }
 
   /// Creates a new Notion Time Log record for the current session.
-  /// Called when the timer starts for the first time in a work lap with a task.
+  /// Called when the timer starts for the first time in a work lap.
   void _createNotionRecord() {
     if (!Prefs.enableTimeTracker) return;
-    if (state.activeTask == null) return;
     if (state.lap != TimerLap.work) return;
     if (state.activeLogPageId != null) return; // Already has a record
     if (_isCreatingRecord) return;
 
     _isCreatingRecord = true;
-    final taskToSync = state.activeTask!;
+    final taskToSync = state.activeTask;
+    final primaryTag =
+        state.activeTags.isNotEmpty ? state.activeTags.first : null;
     final startedAt = DateTime.now();
 
     NotionSyncService()
-        .createSessionRecord(task: taskToSync, startedAt: startedAt)
+        .createSessionRecord(
+      task: taskToSync,
+      primaryTag: primaryTag,
+      startedAt: startedAt,
+    )
         .then((pageId) {
       _isCreatingRecord = false;
-      if (pageId != null && state.activeTask?.id == taskToSync.id) {
+      if (pageId != null && state.activeTask?.id == taskToSync?.id) {
         Prefs.activeLogPageId = pageId;
         Prefs.syncedMinutes = 0;
         emit(state.copyWith(activeLogPageId: () => pageId));
@@ -90,24 +95,26 @@ class TimerCubit extends Cubit<TimerState> {
   /// Called on pause (stop).
   void _updateNotionRecord() {
     if (!Prefs.enableTimeTracker) return;
-    if (state.activeTask == null) return;
     if (state.lap != TimerLap.work) return;
 
     final totalMinutes = state.duration.inMinutes;
     if (totalMinutes < 1) return; // Skip update if less than 1 minute
 
-    final taskToSync = state.activeTask!;
+    final taskToSync = state.activeTask;
+    final primaryTag =
+        state.activeTags.isNotEmpty ? state.activeTags.first : null;
     final logPageId = state.activeLogPageId;
 
     NotionSyncService()
         .updateSessionRecord(
       task: taskToSync,
+      primaryTag: primaryTag,
       totalElapsed: state.duration,
       existingLogPageId: logPageId,
       endedAt: DateTime.now(),
     )
         .then((result) {
-      if (result.success && state.activeTask?.id == taskToSync.id) {
+      if (result.success && state.activeTask?.id == taskToSync?.id) {
         // Update page ID if it was created as a fallback
         if (result.logPageId != null &&
             result.logPageId != state.activeLogPageId) {
@@ -131,7 +138,6 @@ class TimerCubit extends Cubit<TimerState> {
   /// so auto-advance lap changes do not drop completed focus time.
   void _finalizeSession() {
     if (!Prefs.enableTimeTracker) return;
-    if (state.activeTask == null) return;
     if (state.lap != TimerLap.work) return;
 
     final logPageId = state.activeLogPageId;
@@ -145,9 +151,13 @@ class TimerCubit extends Cubit<TimerState> {
       return;
     }
 
-    final taskToSync = state.activeTask!;
+    final taskToSync = state.activeTask;
+    final primaryTag =
+        state.activeTags.isNotEmpty ? state.activeTags.first : null;
+
     NotionSyncService().updateSessionRecord(
       task: taskToSync,
+      primaryTag: primaryTag,
       totalElapsed: state.duration,
       existingLogPageId: logPageId,
       endedAt: DateTime.now(),

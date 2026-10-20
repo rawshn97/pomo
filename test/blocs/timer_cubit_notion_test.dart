@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pomo/models/notion_task.dart';
+import 'package:pomo/models/tracker_tag.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/singletons/prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,18 +106,34 @@ void main() {
     );
 
     blocTest<TimerCubit, TimerState>(
-      'reset preserves current activeTask',
+      'start with active tags but no task initializes session sync cleanly',
       build: () {
-        Prefs.activeTask = testTask;
+        Prefs.enableTimeTracker = true;
+        Prefs.enableNotionSync = false;
+        Prefs.activeTask = null;
+        Prefs.lastTimerTagIds = const ['tag_sleep'];
         return TimerCubit();
       },
-      act: (cubit) => cubit
-        ..start()
-        ..reset(),
+      act: (cubit) => cubit.start(),
       expect: () => [
-        const TimerState(status: TimerStatus.running, activeTask: testTask),
-        const TimerState(activeTask: testTask),
+        const TimerState(
+          status: TimerStatus.running,
+          activeTags: [
+            TrackerTag(
+              id: 'tag_sleep',
+              name: 'Sleep & Rest',
+              icon: '😴',
+              colorHex: '#5C6BC0',
+              isDefault: true,
+            ),
+          ],
+        ),
       ],
+      verify: (cubit) {
+        expect(cubit.state.status, equals(TimerStatus.running));
+        expect(cubit.state.activeTask, isNull);
+        expect(cubit.state.activeTags.length, equals(1));
+      },
     );
   });
 }
