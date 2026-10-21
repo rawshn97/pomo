@@ -86,13 +86,13 @@ class RemoteSessionService {
 
   /// Connects to the Cloudflare Edge Worker WebSocket endpoint.
   Future<void> connectWebSocket() async {
-    final apiKey = Prefs.notionApiKey;
-    if (apiKey.isEmpty) return;
-
     try {
       await disconnectWebSocket();
       final uri = Uri.parse(wsEndpoint);
-      final authUri = uri.replace(queryParameters: {'token': apiKey});
+      final apiKey = Prefs.notionApiKey;
+      final authUri = apiKey.isNotEmpty
+          ? uri.replace(queryParameters: {'token': apiKey})
+          : uri;
       _wsChannel = WebSocketChannel.connect(authUri);
       _wsSubscription = _wsChannel!.stream.listen(
         (message) {
@@ -173,10 +173,6 @@ class RemoteSessionService {
   /// Queries the relay endpoint for active remote sessions.
   Future<void> fetchRemoteSession() async {
     final apiKey = Prefs.notionApiKey;
-    if (apiKey.isEmpty) {
-      remoteSessionNotifier.value = null;
-      return;
-    }
 
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -241,7 +237,6 @@ class RemoteSessionService {
     required SettingsState settingsState,
   }) async {
     final apiKey = Prefs.notionApiKey;
-    if (apiKey.isEmpty) return;
 
     final lapMins = timerState.lap == TimerLap.work
         ? settingsState.workMinutes
@@ -303,7 +298,6 @@ class RemoteSessionService {
   /// Reports that the local session has ended or stopped.
   Future<void> reportStopped() async {
     final apiKey = Prefs.notionApiKey;
-    if (apiKey.isEmpty) return;
 
     // Push immediately over WebSocket if connected (<20ms edge broadcast)
     if (_isWsConnected && _wsChannel != null) {

@@ -1,6 +1,6 @@
 {
-  "versionCode": 9,
-  "versionName": "1.4.5",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.5/pomo-production.apk",
-  "changelog": "Real-time timer sync via Cloudflare Edge Worker and equal-split non-overlapping time tracking math"
+  "versionCode": 10,
+  "versionName": "1.4.6",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.6/pomo-production.apk",
+  "changelog": "Fix remote session sync to connect without requiring Notion API key and update WebSocket relay"
 }
