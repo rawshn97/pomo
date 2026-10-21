@@ -1,6 +1,6 @@
 {
-  "versionCode": 8,
-  "versionName": "1.4.4",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.4/pomo-production.apk",
-  "changelog": "Decommission Android hourly alarms, add manual entry overlap detection and multi-tag split, and augment PARA focus selector"
+  "versionCode": 9,
+  "versionName": "1.4.5",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.5/pomo-production.apk",
+  "changelog": "Real-time timer sync via Cloudflare Edge Worker and equal-split non-overlapping time tracking math"
 }
