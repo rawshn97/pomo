@@ -93,18 +93,21 @@ In the Time Log tab, users can retroactively add past focus blocks using `Manual
      - Show total overlapping minutes.
 3. **Resolution Strategy:**
    - Offer a 2-option resolution selector when overlap is detected:
-     - **Option A: Additive / Merge (Default):**
-       - The new time is added alongside the existing log.
-       - Each hour slot is capped at 60 total logged minutes across all tags.
-       - If the addition would exceed 60 minutes in a single hour slot, the excess is clamped to 60m and an info note is shown (`"Hour capped at 60m"`).
+     - **Option A: Equal-Split Merge (Default):**
+       - The new time is merged alongside existing logs without deleting them.
+       - Core invariant: In any 60-minute clock hour, total logged time across all tags must never exceed 60 minutes (no double-counting).
+       - If $\sum \text{minutes} \le 60$, all tags retain their requested duration.
+       - If $\sum \text{minutes} > 60$, the excess overlapping duration $\Delta = \sum \text{minutes} - 60$ is deducted equally across all active tags in that hour ($d_i = \lfloor \Delta / N \rfloor$).
+       - Example (30m overlap): An existing 60m log + a new 30m log in the same hour yields 90m total ($30m$ excess). The $30m$ overlap is split equally ($15m$ deduction each), resulting in $45m$ for the existing log and $15m$ for the new log ($45m + 15m = 60m$).
+       - Example (60m full overlap): Two 60m logs in the same hour split 50/50 ($30m$ each).
      - **Option B: Overwrite / Replace:**
-       - The existing conflicting log slices within $[T_{start}, T_{end}]$ are truncated or replaced.
-       - Any remote Notion pages associated with superseded hourly rows are updated or archived.
+       - Conflicting log records in that time window are purged before logging the new entry.
+       - The new tag(s) take the full requested duration.
 4. **Multi-Tag Splitting Rules:**
    - When $N$ tags are selected ($N \ge 2$):
      - Total duration $D_{total}$ is divided equally: $D_{tag} = \lfloor D_{total} / N \rfloor$ minutes per tag (with remainder assigned to the primary tag).
      - Slicing: Time is apportioned across the target hour slots proportionally.
-     - Overlap check: Each tag's allocated minutes are verified against existing logs in the respective hour slot. If existing logs for that same tag exist, minutes are combined up to 60m per slot.
+     - Overlap check: Each hour block is capped at 60m with excess overlapping time divided equally among active tags.
 
 ---
 

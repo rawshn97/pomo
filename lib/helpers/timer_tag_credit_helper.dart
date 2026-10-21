@@ -141,7 +141,48 @@ class TimerTagCreditHelper {
         );
       }
     }
-    return result;
+    return capHourAt60Minutes(result);
+  }
+
+  /// Clamps and distributes minutes so the total in [hour] across all tags
+  /// never exceeds 60 minutes, splitting overlapping excess equally across
+  /// all active tags in the hour to prevent double counting.
+  static List<HourlyLog> capHourAt60Minutes(List<HourlyLog> logs) {
+    if (logs.isEmpty) return logs;
+    final total = logs.fold<int>(0, (sum, log) => sum + log.durationMinutes);
+    if (total <= 60) return logs;
+
+    final excess = total - 60;
+    final n = logs.length;
+    final baseDeduction = excess ~/ n;
+    var remainder = excess % n;
+
+    final updated = <HourlyLog>[];
+    for (var i = 0; i < n; i++) {
+      final log = logs[i];
+      final deduction = baseDeduction + (remainder > 0 ? 1 : 0);
+      if (remainder > 0) remainder--;
+      final newMins = (log.durationMinutes - deduction).clamp(1, 60);
+      updated.add(log.copyWith(durationMinutes: newMins));
+    }
+
+    final newTotal =
+        updated.fold<int>(0, (sum, log) => sum + log.durationMinutes);
+    if (newTotal > 60) {
+      final diff = newTotal - 60;
+      final maxIdx = updated.indexWhere((l) => l.durationMinutes > diff);
+      if (maxIdx != -1) {
+        updated[maxIdx] = updated[maxIdx].copyWith(
+          durationMinutes: updated[maxIdx].durationMinutes - diff,
+        );
+      }
+    } else if (newTotal < 60) {
+      final diff = 60 - newTotal;
+      updated[0] = updated[0].copyWith(
+        durationMinutes: updated[0].durationMinutes + diff,
+      );
+    }
+    return updated;
   }
 
   static bool _isAutoFillResting(HourlyLog log) {

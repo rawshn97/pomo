@@ -541,13 +541,28 @@ class _ManualTimeEntryDialogState extends State<ManualTimeEntryDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              _overwriteConflicting
-                                  ? 'Mode: Overwrite & replace existing logs'
-                                  : 'Mode: Add alongside (Merge up to 60m/hr)',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _overwriteConflicting
+                                      ? 'Mode: Overwrite & replace existing logs'
+                                      : 'Mode: Split overlap equally (Max 60m/hr)',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _overwriteConflicting
+                                      ? 'Deletes conflicting records in this window.'
+                                      : 'Splits overlapping minutes equally to prevent double count.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Switch.adaptive(

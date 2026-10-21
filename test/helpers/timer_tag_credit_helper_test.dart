@@ -68,7 +68,7 @@ void main() {
   });
 
   group('TimerTagCreditHelper.mergeCredit', () {
-    test('adds a new tag beside an existing manual log', () {
+    test('adds a new tag beside an existing manual log within 60m', () {
       final existing = [
         HourlyLog(
           id: 'hlog_2026-09-03_14_tag_meetings',
@@ -78,6 +78,7 @@ void main() {
           tagName: 'Meetings',
           tagIcon: '📞',
           tagColorHex: '#FBBC05',
+          durationMinutes: 35,
           loggedAt: DateTime(2026, 9, 3, 14),
         ),
       ];
@@ -92,7 +93,7 @@ void main() {
       expect(merged, hasLength(2));
       expect(
         merged.firstWhere((e) => e.tagId == 'tag_meetings').durationMinutes,
-        60,
+        35,
       );
       expect(
         merged.firstWhere((e) => e.tagId == 'tag_deep_work').durationMinutes,
@@ -100,7 +101,72 @@ void main() {
       );
     });
 
-    test('increments a matching tag and leaves the other', () {
+    test('splits 30m overlap equally to prevent double count (max 60m/hr)', () {
+      final existing = [
+        HourlyLog(
+          id: 'hlog_2026-09-03_14_tag_meetings',
+          dateStr: '2026-09-03',
+          hour: 14,
+          tagId: 'tag_meetings',
+          tagName: 'Meetings',
+          tagIcon: '📞',
+          tagColorHex: '#FBBC05',
+          durationMinutes: 60,
+          loggedAt: DateTime(2026, 9, 3, 14),
+        ),
+      ];
+      final merged = TimerTagCreditHelper.mergeCredit(
+        existingForHour: existing,
+        dateStr: '2026-09-03',
+        hour: 14,
+        tags: const [deepWork],
+        minutesPerTag: const [30],
+        loggedAt: DateTime(2026, 9, 3, 14, 30),
+      );
+      expect(merged, hasLength(2));
+      final meetings =
+          merged.firstWhere((e) => e.tagId == 'tag_meetings').durationMinutes;
+      final deep =
+          merged.firstWhere((e) => e.tagId == 'tag_deep_work').durationMinutes;
+      expect(meetings, 45);
+      expect(deep, 15);
+      expect(meetings + deep, 60);
+    });
+
+    test('splits 60m full overlap equally 50/50', () {
+      final existing = [
+        HourlyLog(
+          id: 'hlog_2026-09-03_14_tag_meetings',
+          dateStr: '2026-09-03',
+          hour: 14,
+          tagId: 'tag_meetings',
+          tagName: 'Meetings',
+          tagIcon: '📞',
+          tagColorHex: '#FBBC05',
+          durationMinutes: 60,
+          loggedAt: DateTime(2026, 9, 3, 14),
+        ),
+      ];
+      final merged = TimerTagCreditHelper.mergeCredit(
+        existingForHour: existing,
+        dateStr: '2026-09-03',
+        hour: 14,
+        tags: const [coding],
+        minutesPerTag: const [60],
+        loggedAt: DateTime(2026, 9, 3, 14),
+      );
+      expect(merged, hasLength(2));
+      expect(
+        merged.firstWhere((e) => e.tagId == 'tag_meetings').durationMinutes,
+        30,
+      );
+      expect(
+        merged.firstWhere((e) => e.tagId == 'tag_coding').durationMinutes,
+        30,
+      );
+    });
+
+    test('increments a matching tag and clamps total to 60m', () {
       final existing = [
         HourlyLog(
           id: 'hlog_2026-09-03_14_tag_deep_work',
@@ -110,7 +176,7 @@ void main() {
           tagName: 'Deep Work',
           tagIcon: '🧠',
           tagColorHex: '#34A853',
-          durationMinutes: 30,
+          durationMinutes: 20,
           loggedAt: DateTime(2026, 9, 3, 14),
         ),
         HourlyLog(
@@ -121,7 +187,7 @@ void main() {
           tagName: 'Coding & Dev',
           tagIcon: '💻',
           tagColorHex: '#4285F4',
-          durationMinutes: 30,
+          durationMinutes: 20,
           loggedAt: DateTime(2026, 9, 3, 14),
         ),
       ];
@@ -135,16 +201,18 @@ void main() {
       );
       expect(
         merged.firstWhere((e) => e.tagId == 'tag_deep_work').durationMinutes,
-        40,
+        30,
       );
       expect(
         merged.firstWhere((e) => e.tagId == 'tag_coding').durationMinutes,
-        30,
+        20,
       );
       expect(
         merged.firstWhere((e) => e.tagId == 'tag_admin').durationMinutes,
         10,
       );
+      final total = merged.fold<int>(0, (s, e) => s + e.durationMinutes);
+      expect(total, 60);
     });
 
     test('replaces auto-fill Resting when the user credits tags', () {
