@@ -1,0 +1,22 @@
+name = "pomo-sync"
+main = "src/index.js"
+compatibility_date = "2024-10-01"
+
+# Cloudflare Durable Objects binding for sub-20ms WebSocket fanout
+[durable_objects]
+bindings = [
+  { name = "SYNC_ROOM", class_name = "SyncRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SyncRoom"]
+
+# Environment variables
+[vars]
+# FOCUS_ACCESS_TOKEN = "your-shared-access-token"
+
+# Optional apex custom domain on Cloudflare
+# routes = [
+#   { pattern = "sync.rawshn.com/*", zone_name = "rawshn.com" }
+# ]

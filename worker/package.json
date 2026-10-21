@@ -1,0 +1,19 @@
+{
+  "name": "pomo-cloudflare-sync",
+  "version": "1.0.0",
+  "description": "Cloudflare Edge Worker for real-time Pomodoro timer cross-device synchronization with WebSockets",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": [
+    "pomo",
+    "pomodoro",
+    "cloudflare-workers",
+    "websockets",
+    "durable-objects"
+  ],
+  "author": "Roshan Raj Mishra",
+  "license": "MIT"
+}

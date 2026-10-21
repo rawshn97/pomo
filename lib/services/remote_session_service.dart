@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
@@ -10,10 +11,11 @@ import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/android_notification_service.dart';
 import 'package:pomo/services/notion_service.dart';
 import 'package:pomo/singletons/prefs.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Service coordinating cross-device focus presence.
 /// Broadcasts local focus sessions and queries active sessions on linked
-/// devices.
+/// devices via Cloudflare Edge Worker WebSockets and HTTP REST relay.
 class RemoteSessionService {
   factory RemoteSessionService() => _instance;
   RemoteSessionService._internal() : _dio = Dio();
@@ -24,10 +26,16 @@ class RemoteSessionService {
   final Dio _dio;
   Timer? _pollingTimer;
   Timer? _broadcastTimer;
+  WebSocketChannel? _wsChannel;
+  StreamSubscription<dynamic>? _wsSubscription;
+  bool _isWsConnected = false;
 
   /// Holds the current active session reported by a remote device, if any.
   final ValueNotifier<RemoteSession?> remoteSessionNotifier =
       ValueNotifier<RemoteSession?>(null);
+
+  /// Whether a WebSocket connection to the sync relay is active.
+  bool get isWebSocketConnected => _isWsConnected;
 
   /// Resolves the presence endpoint URL from the configured Notion proxy.
   @visibleForTesting
@@ -38,6 +46,15 @@ class RemoteSessionService {
     }
     final uri = Uri.parse(base);
     return '${uri.origin}/api/session';
+  }
+
+  /// Resolves the WebSocket presence endpoint URL from the session endpoint.
+  @visibleForTesting
+  String get wsEndpoint {
+    final endpoint = sessionEndpoint;
+    final uri = Uri.parse(endpoint);
+    final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    return '$wsScheme://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/ws';
   }
 
   /// Platform-specific display name for this client.
@@ -62,10 +79,78 @@ class RemoteSessionService {
     return headers;
   }
 
-  /// Starts polling for remote focus sessions every 10 seconds.
+  /// Connects to the Cloudflare Edge Worker WebSocket endpoint.
+  Future<void> connectWebSocket() async {
+    final apiKey = Prefs.notionApiKey;
+    if (apiKey.isEmpty) return;
+
+    try {
+      await disconnectWebSocket();
+      final uri = Uri.parse(wsEndpoint);
+      final authUri = uri.replace(queryParameters: {'token': apiKey});
+      _wsChannel = WebSocketChannel.connect(authUri);
+      _wsSubscription = _wsChannel!.stream.listen(
+        (message) {
+          _isWsConnected = true;
+          _handleWsMessage(message);
+        },
+        onError: (dynamic error) {
+          _isWsConnected = false;
+          Logger().d('RemoteSessionService WS error: $error');
+        },
+        onDone: () {
+          _isWsConnected = false;
+        },
+      );
+    } catch (e) {
+      _isWsConnected = false;
+      Logger().d('RemoteSessionService WS connect failed: $e');
+    }
+  }
+
+  /// Disconnects the active WebSocket connection.
+  Future<void> disconnectWebSocket() async {
+    _isWsConnected = false;
+    await _wsSubscription?.cancel();
+    _wsSubscription = null;
+    await _wsChannel?.sink.close();
+    _wsChannel = null;
+  }
+
+  void _handleWsMessage(dynamic message) {
+    try {
+      final data = jsonDecode(message as String) as Map<String, dynamic>;
+      final type = data['type'] as String?;
+      if (type == 'SESSION_UPDATE' && data['session'] != null) {
+        final session = RemoteSession.fromJson(
+          data['session'] as Map<String, dynamic>,
+        );
+        if (session.deviceId != Prefs.deviceId) {
+          remoteSessionNotifier.value = session;
+          if (!kIsWeb && Platform.isAndroid && session.isRunning) {
+            _syncAndroidNotification(session);
+          }
+          return;
+        }
+      } else if (type == 'SESSION_IDLE') {
+        if (!kIsWeb &&
+            Platform.isAndroid &&
+            remoteSessionNotifier.value != null) {
+          unawaited(AndroidNotificationService().stopForeground());
+        }
+        remoteSessionNotifier.value = null;
+      }
+    } catch (e) {
+      Logger().d('Error decoding WS message: $e');
+    }
+  }
+
+  /// Starts polling for remote focus sessions every 10 seconds and establishes
+  /// a WebSocket connection to the Cloudflare Edge Worker.
   /// Used when the local device is idle/stopped.
   void startPolling() {
     _pollingTimer?.cancel();
+    unawaited(connectWebSocket());
     fetchRemoteSession();
     _pollingTimer = Timer.periodic(
       const Duration(seconds: 10),
@@ -73,10 +158,11 @@ class RemoteSessionService {
     );
   }
 
-  /// Stops polling for remote sessions.
+  /// Stops polling for remote sessions and disconnects the WebSocket.
   void stopPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    unawaited(disconnectWebSocket());
   }
 
   /// Queries the relay endpoint for active remote sessions.
@@ -182,6 +268,18 @@ class RemoteSessionService {
           : null,
     };
 
+    // Push immediately over WebSocket if connected (<20ms edge broadcast)
+    if (_isWsConnected && _wsChannel != null) {
+      try {
+        _wsChannel!.sink.add(
+          jsonEncode({
+            'type': 'BROADCAST_SESSION',
+            'payload': payload,
+          }),
+        );
+      } catch (_) {}
+    }
+
     try {
       await _dio.post<Map<String, dynamic>>(
         sessionEndpoint,
@@ -201,6 +299,17 @@ class RemoteSessionService {
   Future<void> reportStopped() async {
     final apiKey = Prefs.notionApiKey;
     if (apiKey.isEmpty) return;
+
+    // Push immediately over WebSocket if connected (<20ms edge broadcast)
+    if (_isWsConnected && _wsChannel != null) {
+      try {
+        _wsChannel!.sink.add(
+          jsonEncode({
+            'type': 'STOP_SESSION',
+          }),
+        );
+      } catch (_) {}
+    }
 
     try {
       await _dio.post<Map<String, dynamic>>(

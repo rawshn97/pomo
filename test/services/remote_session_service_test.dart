@@ -24,6 +24,24 @@ void main() {
       );
     });
 
+    test('wsEndpoint derives wss protocol from https session endpoint', () {
+      Prefs.notionProxyUrl = 'https://sync.rawshn.com/api/notion/';
+      final service = RemoteSessionService();
+      expect(
+        service.wsEndpoint,
+        equals('wss://sync.rawshn.com/ws'),
+      );
+    });
+
+    test('wsEndpoint derives ws protocol from http local dev endpoint', () {
+      Prefs.notionProxyUrl = 'http://127.0.0.1:8787/api/notion/';
+      final service = RemoteSessionService();
+      expect(
+        service.wsEndpoint,
+        equals('ws://127.0.0.1:8787/ws'),
+      );
+    });
+
     test('deviceId is persisted and stable across calls', () {
       final id1 = Prefs.deviceId;
       final id2 = Prefs.deviceId;
