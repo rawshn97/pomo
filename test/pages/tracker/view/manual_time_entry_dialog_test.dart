@@ -27,7 +27,7 @@ void main() {
       expect(find.text('Add Focus Time'), findsOneWidget);
       expect(find.text('Start Time'), findsOneWidget);
       expect(find.text('End Time'), findsOneWidget);
-      expect(find.text('Activity Tag'), findsOneWidget);
+      expect(find.text('Activity Tags'), findsOneWidget);
       expect(find.text('Log Time'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Log Time'));
@@ -36,6 +36,62 @@ void main() {
 
       // Successfully credited time into Prefs.hourlyLogs
       expect(Prefs.hourlyLogs, isNotEmpty);
+    });
+
+    testWidgets('shows overlap warning and overwrites conflicting records',
+        (tester) async {
+      final now = DateTime.now();
+      final startHour = now.hour > 0 ? now.hour - 1 : 0;
+      final existingLog = HourlyLog(
+        id: 'hlog_existing_test',
+        dateStr: '${now.year}-'
+            '${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')}',
+        hour: startHour,
+        tagId: 'tag_existing',
+        tagName: 'Old Session',
+        tagIcon: '☕',
+        tagColorHex: '#E65100',
+        durationMinutes: 45,
+        loggedAt: now,
+      );
+      await Prefs.saveHourlyLog(existingLog);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ManualTimeEntryDialog(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Overlap warning is visible
+      expect(
+        find.textContaining('Overlaps with 1 existing record(s)'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Old Session (45m)'), findsOneWidget);
+
+      // Scroll switch into view and toggle overwrite switch
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Mode: Overwrite & replace existing logs'),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(find.text('Log Time'));
+      await tester.tap(find.text('Log Time'));
+      await tester.pumpAndSettle();
+
+      // Existing log was replaced
+      expect(
+        Prefs.hourlyLogs.any((l) => l.id == 'hlog_existing_test'),
+        isFalse,
+      );
     });
   });
 

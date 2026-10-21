@@ -312,7 +312,7 @@ class SEn extends S {
 
   @override
   String get enableQuietHoursDescription =>
-      'Silence unattended hourly reminders during the selected time range';
+      'Silence timer alerts and auto-fill resting during the selected time range';
 
   @override
   String get quietHoursStart => 'Quiet hours start';

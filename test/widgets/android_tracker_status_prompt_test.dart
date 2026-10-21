@@ -32,11 +32,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Keep hourly reminders reliable'), findsOneWidget);
+    expect(find.text('Keep focus timer countdowns reliable'), findsOneWidget);
     await tester.tap(find.text('Allow'));
     await tester.pumpAndSettle();
     expect(requestedBattery, isTrue);
-    expect(find.text('Keep hourly reminders reliable'), findsNothing);
+    expect(find.text('Keep focus timer countdowns reliable'), findsNothing);
   });
 
   testWidgets('does not prompt when unrestricted and notifications on',
@@ -54,6 +54,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Keep hourly reminders reliable'), findsNothing);
+    expect(find.text('Keep focus timer countdowns reliable'), findsNothing);
   });
 }

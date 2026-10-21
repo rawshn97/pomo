@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
+import 'package:pomo/services/android_notification_service.dart';
 import 'package:pomo/services/notion_service.dart';
 import 'package:pomo/singletons/prefs.dart';
 
@@ -104,13 +105,42 @@ class RemoteSessionService {
         // Ignore sessions originating from this exact device
         if (session.deviceId != Prefs.deviceId) {
           remoteSessionNotifier.value = session;
+          if (!kIsWeb && Platform.isAndroid && session.isRunning) {
+            _syncAndroidNotification(session);
+          }
           return;
         }
+      }
+      if (!kIsWeb &&
+          Platform.isAndroid &&
+          remoteSessionNotifier.value != null) {
+        unawaited(AndroidNotificationService().stopForeground());
       }
       remoteSessionNotifier.value = null;
     } catch (e) {
       // Non-blocking presence probe failure
       Logger().d('RemoteSessionService fetch failed: $e');
+    }
+  }
+
+  void _syncAndroidNotification(RemoteSession session) {
+    try {
+      final tagText = session.tagName ?? 'Focus Session';
+      final taskText = session.taskTitle;
+      final displayContent =
+          taskText != null ? '$tagText • $taskText' : tagText;
+      AndroidNotificationService().updateNotificationRaw(
+        title: session.formattedRemaining,
+        text: '${session.deviceName} is focusing: $displayContent',
+        isRunning: session.isRunning,
+        subText: 'Remote Focus • Lap #${session.lapNumber}',
+        bigText: 'Remote focus active on ${session.deviceName}\n'
+            'Remaining: ${session.formattedRemaining}\n'
+            'Activity: ${session.tagIcon ?? ''} ${session.tagName ?? 'None'}\n'
+            'Task: ${session.taskTitle ?? 'No task selected'}',
+      );
+    } catch (_) {
+      // Non-blocking notification sync
     }
   }
 

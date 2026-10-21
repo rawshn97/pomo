@@ -269,30 +269,26 @@ class SettingsCubit extends Cubit<SettingsState> {
   void setEnableTimeTracker(bool value) {
     Prefs.enableTimeTracker = value;
     emit(state.copyWith(enableTimeTracker: () => value));
-    if (value) {
-      unawaited(AndroidNotificationService().scheduleNextHourlyAlarm());
-    } else {
-      unawaited(AndroidNotificationService().cancelHourlyAlarms());
-    }
+    unawaited(AndroidNotificationService().cancelHourlyAlarms());
   }
 
   // ignore: avoid_positional_boolean_parameters
   void setEnableQuietHours(bool value) {
     Prefs.enableQuietHours = value;
     emit(state.copyWith(enableQuietHours: () => value));
-    unawaited(AndroidNotificationService().scheduleNextHourlyAlarm());
+    unawaited(AndroidNotificationService().cancelHourlyAlarms());
   }
 
   void setQuietHoursStart(String value) {
     Prefs.quietHoursStart = value;
     emit(state.copyWith(quietHoursStart: () => value));
-    unawaited(AndroidNotificationService().scheduleNextHourlyAlarm());
+    unawaited(AndroidNotificationService().cancelHourlyAlarms());
   }
 
   void setQuietHoursEnd(String value) {
     Prefs.quietHoursEnd = value;
     emit(state.copyWith(quietHoursEnd: () => value));
-    unawaited(AndroidNotificationService().scheduleNextHourlyAlarm());
+    unawaited(AndroidNotificationService().cancelHourlyAlarms());
   }
 
   // ignore: avoid_positional_boolean_parameters

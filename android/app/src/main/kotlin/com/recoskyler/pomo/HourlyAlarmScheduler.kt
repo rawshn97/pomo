@@ -56,68 +56,13 @@ object HourlyAlarmScheduler {
     }
 
     fun schedule(context: Context, triggerAtMillis: Long) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-            ?: run {
-                Log.w(TAG, "AlarmManager unavailable; skip schedule")
-                return
-            }
-        val pending = pendingIntent(context)
-        val canExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            try {
-                alarmManager.canScheduleExactAlarms()
-            } catch (e: Exception) {
-                Log.w(TAG, "canScheduleExactAlarms failed; treating as unavailable", e)
-                false
-            }
-        } else {
-            true
-        }
-
-        if (canExact) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pending,
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pending)
-                }
-                return
-            } catch (e: SecurityException) {
-                Log.w(TAG, "Exact alarm denied; falling back to inexact", e)
-            } catch (e: Exception) {
-                Log.w(TAG, "Exact alarm schedule failed; falling back to inexact", e)
-            }
-        } else {
-            Log.i(TAG, "Exact alarms unavailable; using inexact setAndAllowWhileIdle")
-        }
-
-        // Soft fail: inexact Doze-friendly schedule (may drift; better than crash).
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pending,
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pending)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Inexact alarm schedule also failed; giving up", e)
-        }
+        // Hourly check-in reminders decommissioned.
+        cancel(context)
     }
 
     fun scheduleNextHour(context: Context) {
-        if (!isTimeTrackerEnabled(context)) {
-            cancel(context)
-            return
-        }
-        schedule(context, nextHourBoundaryMillis(System.currentTimeMillis()))
+        // Hourly check-in reminders decommissioned.
+        cancel(context)
     }
 
     fun cancel(context: Context) {

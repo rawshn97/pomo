@@ -98,6 +98,12 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         captureNotificationPayload(intent)
+        // Hourly check-in reminders decommissioned: ensure all alarms and shade tiles are cleared.
+        HourlyAlarmScheduler.setTimeTrackerEnabled(this, false)
+        HourlyAlarmScheduler.cancel(this)
+        val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        notifManager?.cancel(TimerForegroundService.HOURLY_NOTIFICATION_ID)
+
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         liveChannel = methodChannel
         methodChannel?.setMethodCallHandler { call, result ->
@@ -162,11 +168,7 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "showHourlyNotification" -> {
-                    checkAndRequestNotificationPermission()
-                    val title = call.argument<String>("title") ?: "Time Tracker: Check-in Required"
-                    val text = call.argument<String>("text") ?: "Log the past hour."
-                    val payload = call.argument<String>("payload")
-                    TimerForegroundService.postHourlyNotification(this, title, text, payload)
+                    // Hourly check-in reminders decommissioned.
                     result.success(true)
                 }
                 "updateNotification" -> {
@@ -185,28 +187,19 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "scheduleNextHourlyAlarm" -> {
-                    val enableTracker = call.argument<Boolean>("enableTimeTracker") ?: true
+                    val enableTracker = call.argument<Boolean>("enableTimeTracker") ?: false
                     val enableQuiet = call.argument<Boolean>("enableQuietHours") ?: true
                     val quietStart = call.argument<String>("quietHoursStart") ?: "23:00"
                     val quietEnd = call.argument<String>("quietHoursEnd") ?: "07:00"
+                    val triggerAt = call.argument<Number>("triggerAtMillis")?.toLong()
                     HourlyAlarmScheduler.syncTrackerPrefs(
                         this,
-                        enableTracker,
+                        false, // Decommissioned: hourly reminders are disabled
                         enableQuiet,
                         quietStart,
                         quietEnd,
                     )
-                    if (!enableTracker) {
-                        HourlyAlarmScheduler.cancel(this)
-                        result.success(true)
-                        return@setMethodCallHandler
-                    }
-                    val triggerAt = call.argument<Number>("triggerAtMillis")?.toLong()
-                    if (triggerAt != null) {
-                        HourlyAlarmScheduler.schedule(this, triggerAt)
-                    } else {
-                        HourlyAlarmScheduler.scheduleNextHour(this)
-                    }
+                    HourlyAlarmScheduler.cancel(this)
                     result.success(true)
                 }
                 "cancelHourlyAlarms" -> {

@@ -10,15 +10,7 @@ import android.content.Intent
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action != Intent.ACTION_BOOT_COMPLETED &&
-            intent?.action != "android.intent.action.QUICKBOOT_POWERON"
-        ) {
-            return
-        }
-        if (HourlyAlarmScheduler.isTimeTrackerEnabled(context)) {
-            HourlyAlarmScheduler.scheduleNextHour(context)
-        } else {
-            HourlyAlarmScheduler.cancel(context)
-        }
+        // Hourly check-in reminders decommissioned.
+        HourlyAlarmScheduler.cancel(context)
     }
 }

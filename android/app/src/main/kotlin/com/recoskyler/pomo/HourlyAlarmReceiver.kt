@@ -21,43 +21,24 @@ import android.os.PowerManager
  */
 class HourlyAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action != HourlyAlarmScheduler.ACTION_HOURLY_ALARM) {
-            return
-        }
+        // Hourly check-in reminders decommissioned.
         if (!HourlyAlarmScheduler.isTimeTrackerEnabled(context)) {
             HourlyAlarmScheduler.cancel(context)
             return
         }
 
-        val pending = goAsync()
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         val wakeLock = powerManager?.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "pomo:hourly_chime",
         )
-        wakeLock?.acquire(5000)
-
+        wakeLock?.acquire(1000)
         try {
-            val now = System.currentTimeMillis()
-            if (!HourlyAlarmScheduler.isInQuietHours(context, now)) {
-                val (hour, dateYmd) = HourlyAlarmScheduler.completedHourBlock(now)
-                val payload = HourlyAlarmScheduler.hourlyPayload(hour, dateYmd)
-                val title = "Time Tracker: Check-in Required"
-                val text = HourlyAlarmScheduler.hourlyBody(hour)
-                TimerForegroundService.postHourlyNotification(
-                    context,
-                    title,
-                    text,
-                    payload,
-                )
-                playHourlyChime(context)
-            }
-            HourlyAlarmScheduler.scheduleNextHour(context)
+            HourlyAlarmScheduler.cancel(context)
         } finally {
             if (wakeLock?.isHeld == true) {
                 wakeLock.release()
             }
-            pending.finish()
         }
     }
 

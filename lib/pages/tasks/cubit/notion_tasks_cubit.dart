@@ -39,6 +39,8 @@ class NotionTasksCubit extends Cubit<NotionTasksState> {
         tasks = await _notionService.searchTasks(
           query: state.searchQuery.trim(),
         );
+      } else if (state.activeTab == 'para') {
+        tasks = await _notionService.queryProjectsAndAreas();
       } else if (state.activeTab == 'today') {
         tasks = await _notionService.getTasksDueToday();
       } else if (state.activeTab == 'week') {

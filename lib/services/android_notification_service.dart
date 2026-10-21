@@ -8,7 +8,6 @@ import 'package:pomo/helpers/notification_helper.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/app_navigation_controller.dart';
-import 'package:pomo/singletons/prefs.dart';
 
 class AndroidNotificationService {
   factory AndroidNotificationService() => _instance;
@@ -246,6 +245,35 @@ class AndroidNotificationService {
     }
   }
 
+  /// Updates the notification using raw display strings without requiring cubit state.
+  Future<void> updateNotificationRaw({
+    required String title,
+    required String text,
+    required bool isRunning,
+    String? subText,
+    String? bigText,
+  }) async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      final args = {
+        'title': title,
+        'text': text,
+        'isRunning': isRunning,
+        'isHourly': false,
+        'subText': subText,
+        'bigText': bigText,
+      };
+      if (!_isServiceActive) {
+        _isServiceActive = true;
+        await _channel.invokeMethod<bool>('startForeground', args);
+      } else {
+        await _channel.invokeMethod<bool>('updateNotification', args);
+      }
+    } catch (_) {
+      // Ignore channel exceptions
+    }
+  }
+
   Future<void> stopForeground() async {
     if (kIsWeb || !Platform.isAndroid) return;
     try {
@@ -291,26 +319,19 @@ class AndroidNotificationService {
     };
   }
 
-  /// Schedules AlarmManager exact alarm for the upcoming hour boundary.
-  ///
-  /// No-op when time tracker is off (cancels instead). Dart
-  /// [Timer.periodic] remains an in-process backup; this is the source of
-  /// truth when the process is killed / Dozing.
+  /// Decommissioned: hourly reminders are disabled across all devices.
+  /// Invokes native scheduleNextHourlyAlarm with enableTimeTracker=false to cancel alarms.
   Future<void> scheduleNextHourlyAlarm({DateTime? now}) async {
     if (kIsWeb || !Platform.isAndroid) return;
-    if (!Prefs.enableTimeTracker) {
-      await cancelHourlyAlarms();
-      return;
-    }
     try {
       await _channel.invokeMethod<bool>(
         'scheduleNextHourlyAlarm',
         scheduleNextHourlyAlarmArgs(
           now ?? DateTime.now(),
-          enableTimeTracker: Prefs.enableTimeTracker,
-          enableQuietHours: Prefs.enableQuietHours,
-          quietHoursStart: Prefs.quietHoursStart,
-          quietHoursEnd: Prefs.quietHoursEnd,
+          enableTimeTracker: false,
+          enableQuietHours: false,
+          quietHoursStart: '00:00',
+          quietHoursEnd: '00:00',
         ),
       );
     } catch (_) {

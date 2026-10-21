@@ -55,9 +55,17 @@ export default async function handler(req, res) {
       if (session && session.status !== 'stopped') {
         const age = Date.now() - session.updatedAt;
         if (age <= 45000) {
+          const elapsedSecs = Math.floor(age / 1000);
+          const liveRemaining = session.status === 'running'
+            ? Math.max(0, session.remainingSeconds - elapsedSecs)
+            : session.remainingSeconds;
+
           return res.status(200).json({
-            active: true,
-            session,
+            active: liveRemaining > 0,
+            session: {
+              ...session,
+              remainingSeconds: liveRemaining,
+            },
           });
         }
       }

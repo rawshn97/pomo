@@ -654,7 +654,7 @@ abstract class S {
   /// No description provided for @enableQuietHoursDescription.
   ///
   /// In en, this message translates to:
-  /// **'Silence unattended hourly reminders during the selected time range'**
+  /// **'Silence timer alerts and auto-fill resting during the selected time range'**
   String get enableQuietHoursDescription;
 
   /// No description provided for @quietHoursStart.

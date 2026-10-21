@@ -60,10 +60,10 @@ class AndroidTrackerStatusPrompt extends StatefulWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Keep hourly reminders reliable'),
+          title: const Text('Keep focus timer countdowns reliable'),
           content: const Text(
-            'Allow unrestricted battery and notifications so hourly '
-            'check-ins can fire when the app is in the background.',
+            'Allow unrestricted battery and notifications so timer '
+            'countdowns and lap alerts stay reliable in the background.',
           ),
           actions: [
             TextButton(

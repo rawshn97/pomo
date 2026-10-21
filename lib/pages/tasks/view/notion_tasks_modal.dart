@@ -163,6 +163,14 @@ class _TabSelector extends StatelessWidget {
           ),
           icon: Icon(Icons.list, size: isCompact ? 16 : 18),
         ),
+        ButtonSegment<String>(
+          value: 'para',
+          label: const FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text('Areas & Projects'),
+          ),
+          icon: Icon(Icons.account_tree_outlined, size: isCompact ? 16 : 18),
+        ),
       ],
       selected: {activeTab},
       onSelectionChanged: (selected) {
@@ -284,6 +292,30 @@ class _TaskTile extends StatelessWidget {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
+                        if (task.priority.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              task.priority == 'Area'
+                                  ? '🏔️ Area'
+                                  : task.priority == 'Resource'
+                                      ? '📚 Resource'
+                                      : task.priority == 'Project'
+                                          ? '📁 Project'
+                                          : task.priority,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onTertiaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         if (task.status.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(

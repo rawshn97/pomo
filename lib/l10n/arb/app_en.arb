@@ -170,7 +170,7 @@
     "enableTimeTracker": "Enable Time Tracker",
     "enableTimeTrackerDescription": "Automatically track elapsed time and send webhooks or Notion logs",
     "enableQuietHours": "Enable quiet hours",
-    "enableQuietHoursDescription": "Silence unattended hourly reminders during the selected time range",
+    "enableQuietHoursDescription": "Silence timer alerts and auto-fill resting during the selected time range",
     "quietHoursStart": "Quiet hours start",
     "quietHoursEnd": "Quiet hours end",
     "logPastTime": "Log past time",
