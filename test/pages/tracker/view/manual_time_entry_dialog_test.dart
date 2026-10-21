@@ -79,7 +79,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.textContaining('Mode: Overwrite & replace existing logs'),
+        find.textContaining('Mode: Overwrite & replace'),
         findsOneWidget,
       );
 

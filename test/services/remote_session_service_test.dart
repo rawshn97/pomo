@@ -15,17 +15,25 @@ void main() {
       expect(service.deviceName, isNotEmpty);
     });
 
-    test('sessionEndpoint derives correctly from notion proxy', () {
-      Prefs.notionProxyUrl = 'https://pomo-focus-sand.vercel.app/api/notion/';
+    test('sessionEndpoint defaults to Cloudflare Edge Worker', () {
       final service = RemoteSessionService();
       expect(
         service.sessionEndpoint,
-        equals('https://pomo-focus-sand.vercel.app/api/session'),
+        equals(RemoteSessionService.defaultCloudflareSyncEndpoint),
+      );
+    });
+
+    test('sessionEndpoint uses Prefs.syncRelayUrl when explicitly set', () {
+      Prefs.syncRelayUrl = 'https://sync.rawshn.com/api/session';
+      final service = RemoteSessionService();
+      expect(
+        service.sessionEndpoint,
+        equals('https://sync.rawshn.com/api/session'),
       );
     });
 
     test('wsEndpoint derives wss protocol from https session endpoint', () {
-      Prefs.notionProxyUrl = 'https://sync.rawshn.com/api/notion/';
+      Prefs.syncRelayUrl = 'https://sync.rawshn.com/api/session';
       final service = RemoteSessionService();
       expect(
         service.wsEndpoint,
@@ -34,7 +42,7 @@ void main() {
     });
 
     test('wsEndpoint derives ws protocol from http local dev endpoint', () {
-      Prefs.notionProxyUrl = 'http://127.0.0.1:8787/api/notion/';
+      Prefs.syncRelayUrl = 'http://127.0.0.1:8787/api/session';
       final service = RemoteSessionService();
       expect(
         service.wsEndpoint,

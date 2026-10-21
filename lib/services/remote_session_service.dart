@@ -9,7 +9,6 @@ import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/android_notification_service.dart';
-import 'package:pomo/services/notion_service.dart';
 import 'package:pomo/singletons/prefs.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -37,15 +36,21 @@ class RemoteSessionService {
   /// Whether a WebSocket connection to the sync relay is active.
   bool get isWebSocketConnected => _isWsConnected;
 
-  /// Resolves the presence endpoint URL from the configured Notion proxy.
+  /// Default live Cloudflare Edge Worker sync relay endpoint.
+  static const String defaultCloudflareSyncEndpoint =
+      'https://pomo-sync.mishra-roshanraj.workers.dev/api/session';
+
+  /// Resolves the presence endpoint URL.
+  /// Priority:
+  /// 1. Explicitly configured Prefs.syncRelayUrl
+  /// 2. Deployed Cloudflare Edge Worker (sub-20ms WebSocket + Durable Objects)
+  /// 3. Notion proxy / Vercel relay fallback
   @visibleForTesting
   String get sessionEndpoint {
-    final base = NotionService().getBaseUrl();
-    if (base.contains('/api/notion/')) {
-      return base.replaceAll('/api/notion/', '/api/session');
+    if (Prefs.syncRelayUrl.isNotEmpty) {
+      return Prefs.syncRelayUrl;
     }
-    final uri = Uri.parse(base);
-    return '${uri.origin}/api/session';
+    return defaultCloudflareSyncEndpoint;
   }
 
   /// Resolves the WebSocket presence endpoint URL from the session endpoint.

@@ -144,8 +144,8 @@ class TimerTagCreditHelper {
     return capHourAt60Minutes(result);
   }
 
-  /// Clamps and distributes minutes so the total in [hour] across all tags
-  /// never exceeds 60 minutes, splitting overlapping excess equally across
+  /// Clamps and distributes minutes so the total in a given hour across all
+  /// tags never exceeds 60 minutes, splitting overlapping excess equally across
   /// all active tags in the hour to prevent double counting.
   static List<HourlyLog> capHourAt60Minutes(List<HourlyLog> logs) {
     if (logs.isEmpty) return logs;

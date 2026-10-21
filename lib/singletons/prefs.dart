@@ -156,6 +156,7 @@ class Prefs {
   static const String _notionApiKeyVarName = 'pomo_notion_api_key';
   static const String _enableNotionSyncVarName = 'pomo_enable_notion_sync';
   static const String _notionProxyUrlVarName = 'pomo_notion_proxy_url';
+  static const String _syncRelayUrlVarName = 'pomo_sync_relay_url';
   static const String _notionDatabaseIdVarName = 'pomo_notion_database_id';
   static const String _notionTimeLogsDatabaseIdVarName =
       'pomo_notion_time_logs_database_id';
@@ -234,6 +235,10 @@ class Prefs {
 
   static String get notionProxyUrl {
     return Prefs().sharedPreferences.getString(_notionProxyUrlVarName) ?? '';
+  }
+
+  static String get syncRelayUrl {
+    return Prefs().sharedPreferences.getString(_syncRelayUrlVarName) ?? '';
   }
 
   static bool get enableTimeTracker {
@@ -773,6 +778,10 @@ class Prefs {
 
   static set notionProxyUrl(String value) {
     Prefs().sharedPreferences.setString(_notionProxyUrlVarName, value);
+  }
+
+  static set syncRelayUrl(String value) {
+    Prefs().sharedPreferences.setString(_syncRelayUrlVarName, value);
   }
 
   static set notionDatabaseId(String value) {

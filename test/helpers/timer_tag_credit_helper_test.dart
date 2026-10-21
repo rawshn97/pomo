@@ -111,7 +111,6 @@ void main() {
           tagName: 'Meetings',
           tagIcon: '📞',
           tagColorHex: '#FBBC05',
-          durationMinutes: 60,
           loggedAt: DateTime(2026, 9, 3, 14),
         ),
       ];
@@ -143,7 +142,6 @@ void main() {
           tagName: 'Meetings',
           tagIcon: '📞',
           tagColorHex: '#FBBC05',
-          durationMinutes: 60,
           loggedAt: DateTime(2026, 9, 3, 14),
         ),
       ];

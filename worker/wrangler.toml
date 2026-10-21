@@ -10,13 +10,13 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["SyncRoom"]
+new_sqlite_classes = ["SyncRoom"]
 
 # Environment variables
 [vars]
 # FOCUS_ACCESS_TOKEN = "your-shared-access-token"
 
-# Optional apex custom domain on Cloudflare
-# routes = [
-#   { pattern = "sync.rawshn.com/*", zone_name = "rawshn.com" }
-# ]
+# Custom domain on Cloudflare zone rawshn.com
+routes = [
+  { pattern = "sync.rawshn.com/*", zone_name = "rawshn.com" }
+]

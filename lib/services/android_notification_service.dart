@@ -245,7 +245,8 @@ class AndroidNotificationService {
     }
   }
 
-  /// Updates the notification using raw display strings without requiring cubit state.
+  /// Updates the notification using raw display strings without requiring
+  /// cubit state.
   Future<void> updateNotificationRaw({
     required String title,
     required String text,
@@ -320,7 +321,8 @@ class AndroidNotificationService {
   }
 
   /// Decommissioned: hourly reminders are disabled across all devices.
-  /// Invokes native scheduleNextHourlyAlarm with enableTimeTracker=false to cancel alarms.
+  /// Invokes native scheduleNextHourlyAlarm with enableTimeTracker=false to
+  /// cancel alarms.
   Future<void> scheduleNextHourlyAlarm({DateTime? now}) async {
     if (kIsWeb || !Platform.isAndroid) return;
     try {

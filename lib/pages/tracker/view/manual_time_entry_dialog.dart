@@ -546,8 +546,8 @@ class _ManualTimeEntryDialogState extends State<ManualTimeEntryDialog> {
                               children: [
                                 Text(
                                   _overwriteConflicting
-                                      ? 'Mode: Overwrite & replace existing logs'
-                                      : 'Mode: Split overlap equally (Max 60m/hr)',
+                                      ? 'Mode: Overwrite & replace'
+                                      : 'Mode: Split overlap equally',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -555,8 +555,8 @@ class _ManualTimeEntryDialogState extends State<ManualTimeEntryDialog> {
                                 const SizedBox(height: 2),
                                 Text(
                                   _overwriteConflicting
-                                      ? 'Deletes conflicting records in this window.'
-                                      : 'Splits overlapping minutes equally to prevent double count.',
+                                      ? 'Deletes conflicting records.'
+                                      : 'Splits overlap equally (max 60m/hr).',
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontSize: 11,
                                     color: theme.colorScheme.onSurfaceVariant,
