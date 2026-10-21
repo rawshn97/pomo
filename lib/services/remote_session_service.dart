@@ -25,6 +25,7 @@ class RemoteSessionService {
   final Dio _dio;
   Timer? _pollingTimer;
   Timer? _broadcastTimer;
+  Timer? _remoteTickTimer;
   WebSocketChannel? _wsChannel;
   StreamSubscription<dynamic>? _wsSubscription;
   bool _isWsConnected = false;
@@ -132,12 +133,21 @@ class RemoteSessionService {
         );
         if (session.deviceId != Prefs.deviceId) {
           remoteSessionNotifier.value = session;
-          if (!kIsWeb && Platform.isAndroid && session.isRunning) {
-            _syncAndroidNotification(session);
+          if (session.isRunning) {
+            _startRemoteTick(session);
+            if (!kIsWeb && Platform.isAndroid) {
+              _syncAndroidNotification(session);
+            }
+          } else {
+            _stopRemoteTick();
+            if (!kIsWeb && Platform.isAndroid) {
+              unawaited(AndroidNotificationService().stopForeground());
+            }
           }
           return;
         }
       } else if (type == 'SESSION_IDLE') {
+        _stopRemoteTick();
         if (!kIsWeb &&
             Platform.isAndroid &&
             remoteSessionNotifier.value != null) {
@@ -167,6 +177,7 @@ class RemoteSessionService {
   void stopPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    _stopRemoteTick();
     unawaited(disconnectWebSocket());
   }
 
@@ -192,12 +203,21 @@ class RemoteSessionService {
         // Ignore sessions originating from this exact device
         if (session.deviceId != Prefs.deviceId) {
           remoteSessionNotifier.value = session;
-          if (!kIsWeb && Platform.isAndroid && session.isRunning) {
-            _syncAndroidNotification(session);
+          if (session.isRunning) {
+            _startRemoteTick(session);
+            if (!kIsWeb && Platform.isAndroid) {
+              _syncAndroidNotification(session);
+            }
+          } else {
+            _stopRemoteTick();
+            if (!kIsWeb && Platform.isAndroid) {
+              unawaited(AndroidNotificationService().stopForeground());
+            }
           }
           return;
         }
       }
+      _stopRemoteTick();
       if (!kIsWeb &&
           Platform.isAndroid &&
           remoteSessionNotifier.value != null) {
@@ -208,6 +228,33 @@ class RemoteSessionService {
       // Non-blocking presence probe failure
       Logger().d('RemoteSessionService fetch failed: $e');
     }
+  }
+
+  void _startRemoteTick(RemoteSession session) {
+    _remoteTickTimer?.cancel();
+    if (!session.isRunning || session.remainingSeconds <= 0) return;
+
+    _remoteTickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final current = remoteSessionNotifier.value;
+      if (current == null ||
+          !current.isRunning ||
+          current.remainingSeconds <= 0) {
+        _stopRemoteTick();
+        return;
+      }
+      final updated = current.copyWith(
+        remainingSeconds: current.remainingSeconds - 1,
+      );
+      remoteSessionNotifier.value = updated;
+      if (!kIsWeb && Platform.isAndroid) {
+        _syncAndroidNotification(updated);
+      }
+    });
+  }
+
+  void _stopRemoteTick() {
+    _remoteTickTimer?.cancel();
+    _remoteTickTimer = null;
   }
 
   void _syncAndroidNotification(RemoteSession session) {

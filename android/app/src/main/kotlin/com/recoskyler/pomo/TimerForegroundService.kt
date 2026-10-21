@@ -429,19 +429,25 @@ class TimerForegroundService : Service() {
     }
 
     private fun startForegroundNotification() {
-        val notification = buildNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            var fgsType = 0
-            if (Build.VERSION.SDK_INT >= 34) { // Android 14+ / Android 16
-                fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            }
-            if (fgsType != 0) {
-                startForeground(TIMER_NOTIFICATION_ID, notification, fgsType)
+        try {
+            val notification = buildNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                var fgsType = 0
+                if (Build.VERSION.SDK_INT >= 34) { // Android 14+ / Android 16
+                    fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                }
+                if (fgsType != 0) {
+                    startForeground(TIMER_NOTIFICATION_ID, notification, fgsType)
+                } else {
+                    startForeground(TIMER_NOTIFICATION_ID, notification)
+                }
             } else {
                 startForeground(TIMER_NOTIFICATION_ID, notification)
             }
-        } else {
-            startForeground(TIMER_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            // Direct notification fallback ensures shade tile appears even if FGS start is restricted
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            manager?.notify(TIMER_NOTIFICATION_ID, buildNotification())
         }
     }
 

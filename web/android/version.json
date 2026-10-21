@@ -1,6 +1,6 @@
 {
-  "versionCode": 10,
-  "versionName": "1.4.6",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.6/pomo-production.apk",
-  "changelog": "Fix remote session sync to connect without requiring Notion API key and update WebSocket relay"
+  "versionCode": 11,
+  "versionName": "1.4.7",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.7/pomo-production.apk",
+  "changelog": "Fix remote session payload parsing and ensure Android notification shade appears for remote timer"
 }

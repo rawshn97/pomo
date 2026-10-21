@@ -58,5 +58,32 @@ void main() {
       expect(session.taskTitle, isNull);
       expect(session.formattedRemaining, equals('05:00'));
     });
+    test('handles ISO-8601 updatedAt string and liveRemaining precedence', () {
+      final json = {
+        'deviceId': 'dev_cf_1',
+        'deviceName': 'macOS',
+        'status': 'running',
+        'lap': 'work',
+        'lapNumber': 3,
+        'remainingSeconds': 1500,
+        'liveRemaining': 1234,
+        'totalSeconds': 1500,
+        'tagName': 'System Building',
+        'tagIcon': '⏰',
+        'updatedAt': '2026-10-21T11:21:03.416Z',
+      };
+
+      final session = RemoteSession.fromJson(json);
+      expect(session.deviceId, equals('dev_cf_1'));
+      expect(session.remainingSeconds, equals(1234));
+      expect(session.formattedRemaining, equals('20:34'));
+      expect(session.updatedAt.isUtc, isTrue);
+
+      final decremented = session.copyWith(
+        remainingSeconds: session.remainingSeconds - 1,
+      );
+      expect(decremented.remainingSeconds, equals(1233));
+      expect(decremented.formattedRemaining, equals('20:33'));
+    });
   });
 }

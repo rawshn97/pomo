@@ -184,6 +184,7 @@ export class SyncRoom {
     return {
       ...this.session,
       liveRemaining,
+      remainingSeconds: liveRemaining,
       isRunning: this.session.status === "running" && liveRemaining > 0,
     };
   }
@@ -212,6 +213,7 @@ function handleStateless(request, env) {
     const live = {
       ...fallbackSession,
       liveRemaining,
+      remainingSeconds: liveRemaining,
       isRunning: fallbackSession.status === "running" && liveRemaining > 0,
     };
     return new Response(JSON.stringify({ active: live.isRunning, session: live }), {
