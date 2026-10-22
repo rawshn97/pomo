@@ -3,11 +3,11 @@
 **Parent index:** [`SPEC.md`](SPEC.md)  
 **Rule:** Do not copy these into `specs/*.md` until the behavior is in `main` and verified.
 
-This document outlines the architectural specifications for four new capabilities:
-1. Complete Decommissioning of Hourly Check-in Reminders on Mobile & Desktop
-2. Augmented Focus Target Hierarchy (Area / Resource -> Project -> Task Selector)
-3. Manual Time Logging: Overlap Detection, Resolution & Multi-Tag Specification
-4. Real-Time Cross-Device Timer Synchronization Architecture (macOS <-> Android)
+This document outlines the architectural specifications for upcoming capabilities:
+1. Complete Decommissioning of Hourly Check-in Reminders on Mobile & Desktop [Pending Implementation]
+2. Augmented Focus Target Hierarchy (Area / Resource -> Project -> Task Selector) [Pending Implementation]
+3. Manual Time Logging: Overlap Detection, Resolution & Multi-Tag Specification [Pending Implementation]
+4. Real-Time Cross-Device Timer Synchronization Architecture (macOS <-> Android) [SHIPPED in v1.4.7 -> See specs/remote-sync.md]
 
 ---
 
@@ -111,7 +111,9 @@ In the Time Log tab, users can retroactively add past focus blocks using `Manual
 
 ---
 
-## 4. Real-Time Cross-Device Timer Synchronization Architecture
+## 4. Real-Time Cross-Device Timer Synchronization Architecture [SHIPPED in v1.4.7]
+
+> **Shipped Status:** Implemented and shipped in `v1.4.6` and `v1.4.7`. See [`specs/remote-sync.md`](specs/remote-sync.md) for the active production specification, Cloudflare Worker endpoints, and client sync details. Retained below for architectural context and historical evaluation.
 
 ### 4.1 Evaluation of Notion for Real-Time Sync
 Can Notion handle real-time timer synchronization between mobile and desktop?

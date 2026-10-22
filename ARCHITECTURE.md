@@ -45,6 +45,7 @@ flowchart TB
     NS["NotionSyncService (Dio / Notion API)"]
     ANS["AndroidNotificationService (FGS & Alarms)"]
     AUS["AppUpdateService (In-App OTA APK)"]
+    RSS["RemoteSessionService (Cloudflare WS / REST Sync)"]
     HH["HookHelper (RGB Webhooks & Loop)"]
     LNS["LocalNotificationService (macOS)"]
     SH["SoundHelper (Audio Feedback)"]
@@ -59,8 +60,10 @@ flowchart TB
   TC --> ANS
   TC --> HH
   TC --> SH
+  TC --> RSS
   TC -.->|log task session| NS
 
+  RSS --> ANS
   HLW --> NS
   SC --> PREFS
   T2 --> AUS
@@ -283,3 +286,24 @@ To maintain strict separation between local development, staging, and live produ
 | `production` | `lib/main_production.dart` | Release builds (`build-web.sh`, `macOS .app`, `.apk`, `.deb`). |
 
 Always ensure `--flavor` matches the target file prefix when running `flutter run` or `flutter build`.
+
+---
+
+## 12. Real-Time Remote Session Synchronization (Cloudflare Edge & WebSockets)
+
+Shipped in `v1.4.7`, `RemoteSessionService` (`lib/services/remote_session_service.dart`) coordinates cross-device timer countdowns between macOS and Android:
+
+### Architecture & Components
+1. **Cloudflare Worker & Durable Object (`worker/src/index.js`):**
+   - Hosted at `https://pomo-sync.mishra-roshanraj.workers.dev` with WebSocket endpoint `wss://pomo-sync.mishra-roshanraj.workers.dev/ws`.
+   - Uses Durable Objects (`SyncRoom`) to hold active session state in memory and fan out state updates instantly to connected clients.
+2. **Target Timestamp Model:**
+   - Instead of streaming every second, active clients broadcast state transitions with `endsAt = now() + remainingDuration`.
+   - The Cloudflare Worker dynamically computes `liveRemaining = max(0, endsAt - now())` on every poll and push.
+3. **Client-Side Deserialization & Local 1-Second Ticker:**
+   - `RemoteSession.fromJson` (`lib/models/remote_session.dart`) safely parses ISO-8601 strings and numeric millisecond epochs.
+   - When receiving an active remote session, `RemoteSessionService` starts `_startRemoteTick()` to decrement remaining seconds locally each second.
+4. **Native Android Notification Shade Mirroring:**
+   - Calls `AndroidNotificationService().showRunningRemoteNotification(session)` every second.
+   - On Android, `TimerForegroundService.kt` runs with `startForeground` safety checks and direct `NotificationManager.notify()` fallbacks, ensuring the notification shade is immediately visible even while the app is backgrounded.
+
