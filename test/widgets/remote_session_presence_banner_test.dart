@@ -103,5 +103,42 @@ void main() {
 
       expect(find.textContaining('is focusing'), findsNothing);
     });
+
+    testWidgets('shows Take Over Back when local timer has paused progress',
+        (tester) async {
+      when(() => timerCubit.state).thenReturn(
+        const TimerState(
+          duration: Duration(seconds: 120),
+        ),
+      );
+
+      final session = RemoteSession(
+        deviceId: 'dev_remote_1',
+        deviceName: 'Mobile',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 1380,
+        totalSeconds: 1500,
+        updatedAt: DateTime.now(),
+      );
+      RemoteSessionService().remoteSessionNotifier.value = session;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: timerCubit,
+            child: const Scaffold(
+              body: RemoteSessionPresenceBanner(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Take Over Back'), findsOneWidget);
+
+      await tester.tap(find.text('Take Over Back'));
+      verify(() => timerCubit.adoptRemoteSession(session)).called(1);
+    });
   });
 }

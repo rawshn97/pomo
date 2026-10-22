@@ -8,6 +8,7 @@ import 'package:pomo/helpers/hourly_log_writer.dart';
 import 'package:pomo/helpers/lap_helper.dart';
 import 'package:pomo/helpers/sound_helper.dart';
 import 'package:pomo/models/notion_task.dart';
+import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/models/tracker_tag.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/services/notion_sync_service.dart';
@@ -212,10 +213,47 @@ class TimerCubit extends Cubit<TimerState> {
   bool get canModifyTags =>
       state.status != TimerStatus.running || state.lap != TimerLap.work;
 
-  /// Set active tags on the timer (used e.g. when taking over a remote session).
+  /// Set active tags on the timer (used e.g. when taking over a session).
   void setActiveTags(List<TrackerTag> tags) {
     if (!canModifyTags) return;
     _persistActiveTags(tags);
+  }
+
+  /// Adopt a remote focus session from another linked device (Take Over).
+  /// Synchronizes elapsed lap duration, lap type, lap number, and tag,
+  /// then immediately starts the local countdown.
+  void adoptRemoteSession(RemoteSession session) {
+    final lap = TimerLap.values.firstWhere(
+      (l) => l.name == session.lap,
+      orElse: () => TimerLap.work,
+    );
+    final elapsedSecs = (session.totalSeconds - session.remainingSeconds).clamp(
+      0,
+      session.totalSeconds,
+    );
+    final newDuration = Duration(seconds: elapsedSecs);
+    Prefs.duration = newDuration;
+
+    var tags = state.activeTags;
+    if (session.tagName != null) {
+      final matches = Prefs.trackerTags.where(
+        (t) => t.name == session.tagName,
+      );
+      if (matches.isNotEmpty) {
+        tags = [matches.first];
+        Prefs.lastTimerTagIds = tags.map((t) => t.id).toList();
+      }
+    }
+
+    emit(
+      state.copyWith(
+        status: () => TimerStatus.running,
+        duration: () => newDuration,
+        lap: () => lap,
+        lapNumber: () => session.lapNumber > 0 ? session.lapNumber : 1,
+        activeTags: () => tags,
+      ),
+    );
   }
 
   /// Toggle an activity tag used for hourly credit.

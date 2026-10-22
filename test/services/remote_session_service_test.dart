@@ -59,20 +59,18 @@ void main() {
       expect(id1, equals(id2));
     });
 
-    test(
-        'startRepeatingBroadcast and pauseRepeatingBroadcast manage timers cleanly',
-        () {
-      final service = RemoteSessionService();
-      // Should not throw or crash when called with callbacks
-      service.startRepeatingBroadcast(
-        getTimerState: () => const TimerState(),
-        getSettingsState: () => const SettingsState(),
-      );
-      service.pauseRepeatingBroadcast(
-        timerState: const TimerState(duration: Duration(seconds: 30)),
-        settingsState: const SettingsState(),
-      );
-      service.stopRepeatingBroadcast();
+    test('broadcast and pause manage repeating timers cleanly', () {
+      final service = RemoteSessionService()
+        ..startRepeatingBroadcast(
+          getTimerState: () => const TimerState(),
+          getSettingsState: () => const SettingsState(),
+        )
+        ..pauseRepeatingBroadcast(
+          timerState: const TimerState(duration: Duration(seconds: 30)),
+          settingsState: const SettingsState(),
+        )
+        ..stopRepeatingBroadcast();
+      expect(service, isNotNull);
     });
   });
 }

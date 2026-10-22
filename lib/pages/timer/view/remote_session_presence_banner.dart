@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/remote_session_service.dart';
-import 'package:pomo/singletons/prefs.dart';
 
 /// Renders a live cross-device presence banner when another linked device is
 /// actively running a focus timer.
@@ -12,15 +11,17 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localTimerRunning = context.select<TimerCubit, bool>(
-      (c) =>
-          c.state.status == TimerStatus.running ||
-          c.state.duration > Duration.zero,
+    final isLocalRunning = context.select<TimerCubit, bool>(
+      (c) => c.state.status == TimerStatus.running,
     );
 
-    if (localTimerRunning) {
+    if (isLocalRunning) {
       return const SizedBox.shrink();
     }
+
+    final hasLocalProgress = context.select<TimerCubit, bool>(
+      (c) => c.state.duration > Duration.zero,
+    );
 
     return ValueListenableBuilder<RemoteSession?>(
       valueListenable: RemoteSessionService().remoteSessionNotifier,
@@ -48,6 +49,10 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
         final isPaused = remoteSession.status == 'paused';
         final accentColor = isPaused ? Colors.amberAccent : Colors.greenAccent;
         final statusText = isPaused ? 'paused' : 'focusing';
+        final headline = hasLocalProgress
+            ? '${remoteSession.deviceName} is $statusText'
+            : '${remoteSession.deviceName} is $statusText';
+        final buttonLabel = hasLocalProgress ? 'Take Over Back' : 'Take Over';
 
         return Container(
           margin: const EdgeInsets.only(top: 8, bottom: 8),
@@ -92,7 +97,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${remoteSession.deviceName} is $statusText',
+                          headline,
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
@@ -135,15 +140,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
-                  if (remoteSession.tagName != null) {
-                    final matches = Prefs.trackerTags.where(
-                      (t) => t.name == remoteSession.tagName,
-                    );
-                    if (matches.isNotEmpty) {
-                      context.read<TimerCubit>().setActiveTags([matches.first]);
-                    }
-                  }
-                  context.read<TimerCubit>().start();
+                  context.read<TimerCubit>().adoptRemoteSession(remoteSession);
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
@@ -158,7 +155,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Take Over',
+                    buttonLabel,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: accentColor,
                       fontWeight: FontWeight.bold,

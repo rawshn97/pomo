@@ -174,11 +174,13 @@ class MacosMenuBarService {
             : (deviceLower.contains('web') ? '🌐' : '💻');
     final title = '$deviceEmoji ${remoteSession.formattedRemaining}';
     final tagText = remoteSession.tagName ?? 'Focus';
+    final remaining = remoteSession.formattedRemaining;
     final tooltip =
-        '${remoteSession.deviceName} is focusing: $tagText (${remoteSession.formattedRemaining})';
+        '${remoteSession.deviceName} is focusing: $tagText ($remaining)';
 
     await _channel.invokeMethod<void>('setTitle', {'title': title});
     await _channel.invokeMethod<void>('setToolTip', {'toolTip': tooltip});
+    await _syncMenuIfNeeded(force: true);
   }
 
   Future<void> updateFromState({
@@ -263,8 +265,20 @@ class MacosMenuBarService {
     _menuIsRunning = isRunning;
     _menuSessionActive = sessionActive;
 
+    final remote = RemoteSessionService().remoteSessionNotifier.value;
+    final canTakeOver = !sessionActive && remote != null && remote.isRunning;
+
     await _channel.invokeMethod<void>('setContextMenu', {
       'items': [
+        if (canTakeOver) ...[
+          {
+            'key': 'takeover',
+            'label': 'Take over from ${remote.deviceName} '
+                '(${remote.formattedRemaining})',
+            'type': 'normal',
+          },
+          {'type': 'separator'},
+        ],
         {
           'key': 'toggle',
           'label': isRunning ? 'Pause timer' : 'Start timer',
@@ -309,6 +323,11 @@ class MacosMenuBarService {
     }
 
     switch (key) {
+      case 'takeover':
+        final remote = RemoteSessionService().remoteSessionNotifier.value;
+        if (remote != null && remote.isRunning) {
+          timerCubit.adoptRemoteSession(remote);
+        }
       case 'toggle':
         timerCubit.toggle();
       case 'reset':

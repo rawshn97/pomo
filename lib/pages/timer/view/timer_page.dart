@@ -558,14 +558,34 @@ class _TimerViewState extends State<TimerView> {
     _focusNode = FocusNode();
     AndroidNotificationService().init(context.read<TimerCubit>());
     RemoteSessionService().startPolling();
+    RemoteSessionService()
+        .remoteSessionNotifier
+        .addListener(_onRemoteSessionUpdate);
     if (kIsWeb) {
       WebPwaService().init();
       WebPwaService().requestNotificationPermission();
     }
   }
 
+  void _onRemoteSessionUpdate() {
+    final remote = RemoteSessionService().remoteSessionNotifier.value;
+    if (remote != null &&
+        remote.isRunning &&
+        remote.deviceId.isNotEmpty &&
+        remote.deviceId != Prefs.deviceId) {
+      final timerCubit = context.read<TimerCubit>();
+      if (timerCubit.state.status == TimerStatus.running) {
+        // Another linked device took over; pause local timer to yield.
+        timerCubit.stop();
+      }
+    }
+  }
+
   @override
   void dispose() {
+    RemoteSessionService()
+        .remoteSessionNotifier
+        .removeListener(_onRemoteSessionUpdate);
     _focusNode.dispose();
     RemoteSessionService().stopPolling();
     if (kIsWeb) {
