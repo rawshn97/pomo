@@ -3,8 +3,8 @@
 Cross-platform Pomodoro timer with 24-hour hourly time tracking, Notion PARA sync, and RGB webhooks.
 
 **Live Web App (PWA):** [pomo-focus-sand.vercel.app](https://pomo-focus-sand.vercel.app)  
-**Latest Release:** [GitHub Releases (v1.4.7)](https://github.com/rawshn97/pomo/releases/tag/v1.4.7) (Android APK with in-app OTA, macOS DMG)  
-**Docs:** [SPEC.md](SPEC.md) (shipped behavior) · [AGENTS.md](AGENTS.md) (contributor & agent rules) · [ARCHITECTURE.md](ARCHITECTURE.md) (system design)
+**Latest Release:** [GitHub Releases (v1.5.1)](https://github.com/rawshn97/pomo/releases/tag/v1.5.1) (Android APK with in-app OTA, macOS DMG)  
+**Docs:** [docs/](docs/) (Diataxis tutorials & guides) · [SPEC.md](SPEC.md) (shipped behavior) · [AGENTS.md](AGENTS.md) (contributor & agent rules) · [ARCHITECTURE.md](ARCHITECTURE.md) (system design)
 
 [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
 
@@ -46,21 +46,28 @@ Cross-platform Pomodoro timer with 24-hour hourly time tracking, Notion PARA syn
 
 ### Real-time cross-device sync
 
-- Real-time timer countdown sync between macOS and Android via Cloudflare Edge Worker WebSocket relay
-- Active macOS sessions automatically mirror to the Android notification shade with smooth 1-second ticks
-- Live session presence pill banner on the Timer tab
+- Omnidirectional 3-way timer sync across macOS, Android, and Web PWA via Cloudflare Edge Worker WebSocket relay (`pomo-sync.mishra-roshanraj.workers.dev`) using Durable Objects with sub-20ms broadcast latency
+- Cross-device session takeover with live migration of active task descriptions and Notion activity tags into local state
+- Active sessions mirror to the Android notification shade with smooth 1-second ticks, macOS menu bar status, and dynamic PWA tab titles
+- Live session presence pill banner on the Timer tab with takeover and pause state indicators
+
+### Brand identity and design system
+
+- Aligned with rawshn.com obsidian neon aesthetic (obsidian `#0A0C10`, cyan `#00F0FF`, magenta `#FF00AA`)
+- Android Material 3 adaptive icon with monochrome themed icon support (Android 13+ Material You dynamic theming)
+- Multi-density launcher assets (`mdpi` through `xxxhdpi`), vector splash assets, macOS AppIcon, and PWA maskable icons
 
 ### Integrations
 
 - **Webhooks:** POST RGB JSON on timer events (comma-separated URLs). Built for [Home Assistant](https://www.home-assistant.io/docs/automation/trigger/#webhook-trigger) ambient lighting.
 - **Notion:** Time Logs, Hourly Timeline, activity tag registry (optional proxy on web; see [specs/web.md](specs/web.md)).
-- **Cloudflare Edge Worker:** WebSocket relay and REST state store (`worker/`) hosted at `pomo-sync.mishra-roshanraj.workers.dev`.
+- **Cloudflare Edge Worker:** WebSocket relay and REST state store (`worker/`) hosted at `pomo-sync.mishra-roshanraj.workers.dev` using Durable Objects.
 
 ### Platforms
 
 | Platform | Install | Notes |
 |----------|---------|--------|
-| **Android** | [Releases (v1.4.7)](https://github.com/rawshn97/pomo/releases/tag/v1.4.7) → `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). |
+| **Android** | [Releases (v1.5.1)](https://github.com/rawshn97/pomo/releases/tag/v1.5.1) -> `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). Material 3 adaptive icon with dynamic monochrome theming. |
 | **macOS** | [Releases](https://github.com/rawshn97/pomo/releases) or [build locally](#macos) | Menu bar, floating overlay, desktop notifications, launch at login |
 | **Web (PWA)** | [Live App](https://pomo-focus-sand.vercel.app) or deploy via `./scripts/build-web.sh` | CanvasKit PWA; pair with Vercel proxy for Notion on browser |
 
@@ -171,9 +178,26 @@ open ./Pomo.dmg
 
 ### Prerequisites
 
+- **Flutter SDK:** `>= 3.27.0` (stable channel) with **Dart SDK:** `^3.6.0`
+- **macOS Desktop:** Xcode Command Line Tools (`xcode-select --install`) and CocoaPods (`brew install cocoapods`)
+- **Android:** OpenJDK 17 or 21 (`brew install openjdk@21`) and Android SDK platform tools
+- **Web PWA & Sync Worker (Optional):** Node.js (>= 18), Vercel CLI (`npm install -g vercel`), and Cloudflare Wrangler (`npm install -g wrangler`)
+
+### Quick Setup
+
+Run the automated onboarding setup script:
+
 ```sh
 ./scripts/setup.sh
-# or: flutter pub get && flutter gen-l10n
+```
+
+This verifies toolchains, initializes `.env` from `sample.env`, fetches dependencies, and compiles localization accessors.
+
+Manual setup alternative:
+```sh
+cp sample.env .env
+flutter pub get
+flutter gen-l10n
 ```
 
 ### Flavors
@@ -197,7 +221,10 @@ flutter run --flavor production -d chrome --target lib/main_production.dart
 ./scripts/verify.sh
 ```
 
-Runs format check, `flutter analyze`, and tests.
+Runs format check, `flutter analyze`, and tests. Use `--test <pattern>` to target specific tests:
+```sh
+./scripts/verify.sh --test cubit
+```
 
 ---
 
@@ -220,7 +247,7 @@ Runs format check, `flutter analyze`, and tests.
 Strings live in `lib/l10n/arb/app_en.arb`. After editing:
 
 ```sh
-flutter gen-l10n --arb-dir="lib/l10n/arb"
+flutter gen-l10n
 ```
 
 Asset codegen (when icons / splash change):
@@ -237,6 +264,11 @@ dart run flutter_launcher_icons
 | File | Purpose |
 |------|---------|
 | [README.md](README.md) | Install and build (this file) |
+| [docs/](docs/) | Diataxis documentation index (Tutorials, How-To, Reference, Explanation) |
+| [docs/getting-started.md](docs/getting-started.md) | Step-by-step tutorial: clone to running on macOS, Android, Web |
+| [docs/how-to/](docs/how-to/) | Practical how-to guides (Notion sync, Cloudflare worker, Releases, Webhooks) |
+| [docs/reference/](docs/reference/) | Technical reference (Env vars, scripts, endpoints) |
+| [docs/explanation/](docs/explanation/) | Architectural deep-dives (Target Timestamp sync model) |
 | [SPEC.md](SPEC.md) | Shipped product index |
 | [specs/](specs/) | Per-feature contracts |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design |

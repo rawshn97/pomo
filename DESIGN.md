@@ -124,7 +124,7 @@ NO UNRESOLVED DECISIONS
 
 ---
 
-# Visual Brand System — Pomo × rawshn.com
+# Visual Brand System: Pomo × rawshn.com
 
 Created by `/design-consultation` on 2026-09-14.
 Branch: `brand/rawshn-align`
@@ -146,10 +146,10 @@ Preview artifact: `~/.gstack/projects/ItsRRM97-pomo/designs/design-system-202609
 - **Reference:** https://rawshn.com (frozen branding: dark glass / neon)
 
 ## Typography
-- **Display / UI:** Space Grotesk (bundled variable font) — matches rawshn.com brand kit on purpose
+- **Display / UI:** Space Grotesk (bundled variable font): matches rawshn.com brand kit on purpose
 - **Body:** Space Grotesk
 - **UI / Labels / Eyebrows:** JetBrains Mono (uppercase tracking)
-- **Data / Timer digits:** JetBrains Mono with tabular figures — default timer face
+- **Data / Timer digits:** JetBrains Mono with tabular figures: default timer face
 - **Code / Status strip:** JetBrains Mono
 - **Loading:** Self-hosted TTF under `fonts/brand/` (no runtime Google Fonts fetch)
 - **Scale:** displayLarge ~48–56 (timer), titleLarge ~22, titleMedium ~16, bodyMedium ~14, labelSmall / mono eyebrow ~11
@@ -175,7 +175,7 @@ Preview artifact: `~/.gstack/projects/ItsRRM97-pomo/designs/design-system-202609
 - **Scale:** 2xs(2) xs(4) sm(8) md(16) lg(24) xl(32) 2xl(48) 3xl(64)
 
 ## Layout
-- **Approach:** Hybrid — app chrome grid-disciplined; Focus face composition-first (one clock, one primary control)
+- **Approach:** Hybrid: app chrome grid-disciplined; Focus face composition-first (one clock, one primary control)
 - **Shell:** Bottom nav (mobile) / NavigationRail (wide ≥800): Focus · Tracker · Settings
 - **Max content width:** Comfortable for forms; timer centered
 - **Border radius:** sm 8 · glass 16 · glass-lg 20 · pill 999

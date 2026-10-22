@@ -22,7 +22,7 @@ fi
 if ! xcodebuild -version >/dev/null 2>&1; then
   echo "ERROR: Xcode ('xcodebuild') is not available in the current developer path."
   echo "Please switch your active developer tool directory to Xcode:"
-  echo "   sudo xcode-select -s /Applications/Xcode-26.6.0.app/Contents/Developer"
+  echo "   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
   exit 1
 fi
 
@@ -30,7 +30,7 @@ if xcodebuild -sdk macosx -version 2>&1 | grep -i -q "license agreements"; then
   echo "ERROR: You have not agreed to the Xcode license agreements."
   echo "Please run the following commands in terminal to accept the license and set the default Xcode path:"
   echo "   sudo xcodebuild -license accept"
-  echo "   sudo xcode-select -s /Applications/Xcode-26.6.0.app/Contents/Developer"
+  echo "   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
   exit 1
 fi
 

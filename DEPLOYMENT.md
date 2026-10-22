@@ -100,7 +100,7 @@ Run the all-in-one deploy script:
 ```
 
 What this script executes:
-1. Reads version and build number from `pubspec.yaml` (e.g. `1.3.9+12` -> tag `v1.3.9`).
+1. Reads version and build number from `pubspec.yaml` (e.g. `1.5.1+15` -> tag `v1.5.1`).
 2. Compiles signed production APK (`build/app/outputs/flutter-apk/app-production-release.apk`) using `scripts/build_android_release_apk.sh`.
 3. Updates `web/android/version.json` with the new `versionCode`, `versionName`, download URL, and changelog.
 4. Uses `gh release` to create or update the GitHub Release tag `v<version>` and uploads `pomo-production.apk`.
@@ -148,25 +148,54 @@ This configures local identity signing so notification banners and launch-at-log
    ```
 3. Upload `Pomo.dmg` to the corresponding GitHub Release tag using `gh`:
    ```bash
-   gh release upload "v1.3.9" "./Pomo.dmg" --clobber
+   gh release upload "v1.5.1" "./Pomo.dmg" --clobber
    ```
 
 ---
 
-## 5. Agent Deployment Checklist
+## 5. Cloudflare Edge Worker Deployment (`worker/`)
+
+The real-time synchronization relay is hosted on Cloudflare Workers with Durable Objects for sub-20ms multi-device broadcast.
+
+### Deployment Steps
+1. Navigate to the worker directory:
+   ```bash
+   cd worker
+   ```
+2. Verify configuration in `worker/wrangler.toml` (service name: `pomo-sync`, Durable Object binding: `SyncRoom`).
+3. Deploy to Cloudflare edge:
+   ```bash
+   npx wrangler deploy
+   ```
+4. Verify edge deployment:
+   ```bash
+   curl https://pomo-sync.mishra-roshanraj.workers.dev/health
+   ```
+   Expected response: `{"status":"healthy","service":"pomo-cloudflare-sync",...}`.
+5. If `FOCUS_ACCESS_TOKEN` is used for authentication, configure the secret via:
+   ```bash
+   npx wrangler secret put FOCUS_ACCESS_TOKEN
+   ```
+
+---
+
+## 6. Agent Deployment Checklist
 
 When an agent is asked to deploy an update:
 
 1. **Check Clean Git State:** Run `git status` to ensure all working changes are committed or stashed.
 2. **Bump Version (if shipping a new release):**
-   - Update `version:` in `pubspec.yaml` (e.g. `1.4.0+13`).
+   - Update `version:` in `pubspec.yaml` (e.g. `1.5.1+15`).
    - If UI strings changed, run `flutter gen-l10n`.
 3. **Run Verification:** Run `./scripts/verify.sh` and ensure exit code is 0.
 4. **Deploy Web:** Run `vercel deploy --prod`.
-5. **Deploy Android (if releasing mobile update):**
+5. **Deploy Cloudflare Sync Worker (if `worker/` changed):**
+   - Run `cd worker && npx wrangler deploy`.
+   - Verify health via `curl https://pomo-sync.mishra-roshanraj.workers.dev/health`.
+6. **Deploy Android (if releasing mobile update):**
    - Run `./scripts/deploy_android_update.sh "<release notes>"`.
    - Run `vercel deploy --prod` to push the new `version.json`.
-6. **Deploy macOS (if releasing desktop update):**
+7. **Deploy macOS (if releasing desktop update):**
    - Run `./build_macos_dmg.sh`.
    - Run `gh release upload "v<version>" "./Pomo.dmg" --clobber`.
-7. **Commit & Push:** Commit version bumps and docs to `main`, then `git push origin main`.
+8. **Commit & Push:** Commit version bumps and docs to `main`, then `git push origin main`.

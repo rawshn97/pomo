@@ -51,7 +51,8 @@ This file is the **entrypoint**. Shipped contracts live under [`specs/`](specs/)
 | **Webhooks** | RGB JSON to comma-separated URLs on timer events (HomeAssistant) |
 | **macOS desktop** | Menu bar, floating overlay, desktop notifications, launch at login |
 | **Android** | Timer FGS + hourly exact alarms + 1-tap Log Work / Switch Tag / Open Grid |
-| **Remote sync** | Real-time cross-device timer countdown via Cloudflare WS + Android notification shade |
+| **Remote sync** | Omnidirectional cross-device timer countdown & session takeover (task + tags migration) via Cloudflare WS sub-20ms relay + Android shade |
+| **Brand identity** | Android Material 3 adaptive icon with Rawshn brand identity (obsidian, cyan, magenta), monochrome themed icon, and dark glass theme |
 | **Web PWA** | Browser run + `./scripts/build-web.sh`; notifications / PiP where supported |
 
 **Not shipped extras:** Overlay tag picker (overlay stays display-only). SSE live tag push.
@@ -62,6 +63,9 @@ This file is the **entrypoint**. Shipped contracts live under [`specs/`](specs/)
 
 | Date | Change |
 |------|--------|
-| 2026-10-22 | Cross-device real-time sync with Cloudflare WebSocket relay shipped in v1.4.7 (specs/remote-sync.md) |
+| 2026-10-22 | v1.5.1: Real-time active task and activity tags migration during cross-device session takeover (specs/remote-sync.md) |
+| 2026-10-22 | v1.5.0: Android Material 3 adaptive icon with Rawshn brand identity, monochrome themed icon, and splash assets |
+| 2026-10-22 | v1.4.8: Omnidirectional 3-way sync across macOS, Android, and Web PWA with Cloudflare Durable Objects |
+| 2026-10-22 | v1.4.7: Cross-device real-time sync with Cloudflare WebSocket relay and 1s shade ticker (specs/remote-sync.md) |
 | 2026-09-03 | SPEC.md becomes index; shipped inventory split into `specs/*.md` (LinkedIn Tools layout) |
 | 2026-09-03 | Timer hourly tag credit (Approach A) shipped |

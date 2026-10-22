@@ -27,7 +27,7 @@ echo "=========================================="
 
 echo "1. Getting dependencies and localizations..."
 flutter pub get >/dev/null
-flutter gen-l10n --arb-dir="lib/l10n/arb" >/dev/null
+flutter gen-l10n >/dev/null
 
 echo "2. Building APK (production flavor, debug build)..."
 flutter build apk --debug --flavor production --target lib/main_production.dart

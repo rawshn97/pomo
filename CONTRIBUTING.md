@@ -8,10 +8,12 @@ Welcome to the `pomo` repository (`github.com/rawshn97/pomo`)! We appreciate you
 
 Before contributing code, verify that your local development environment meets the following requirements:
 
-- **Flutter SDK**: `^3.6.0` (Recommended: Flutter `3.27.1` or newer)
-- **Dart SDK**: `^3.5.4` or newer
+- **Flutter SDK**: `>= 3.27.0` (stable channel)
+- **Dart SDK**: `^3.6.0` (bundled with Flutter `>= 3.27.0`)
 - **Platform Toolchains**:
-  - For macOS / iOS builds: Xcode (`15.0+`) and CocoaPods installed.
+  - For macOS / iOS builds: Xcode (`15.0+`) and CocoaPods (`brew install cocoapods`).
+  - For Android builds: OpenJDK 17 or 21 (`brew install openjdk@21`) and Android SDK platform tools.
+  - For Web / Worker deployments: Node.js (>= 18), global Vercel CLI (`npm install -g vercel`), and Cloudflare Wrangler (`npm install -g wrangler`).
   - For Linux builds: `apt-get install libgstreamer1.0-dev libgtk-3-dev liblzma-dev clang cmake ninja-build pkg-config`
   - For Web builds: Chrome browser installed.
 
@@ -57,7 +59,7 @@ Open `lib/l10n/arb/app_en.arb` and add your key with a descriptive `@key` block:
 ### B. Regenerating Localization Classes
 Whenever you modify `.arb` files, regenerate the Dart localization accessors:
 ```bash
-flutter gen-l10n --arb-dir="lib/l10n/arb"
+flutter gen-l10n
 ```
 Or run `./scripts/setup.sh`.
 

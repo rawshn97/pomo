@@ -291,19 +291,57 @@ Always ensure `--flavor` matches the target file prefix when running `flutter ru
 
 ## 12. Real-Time Remote Session Synchronization (Cloudflare Edge & WebSockets)
 
-Shipped in `v1.4.7`, `RemoteSessionService` (`lib/services/remote_session_service.dart`) coordinates cross-device timer countdowns between macOS and Android:
+Shipped in `v1.4.7` and expanded in `v1.4.8` through `v1.5.1`, `RemoteSessionService` (`lib/services/remote_session_service.dart`) coordinates omnidirectional cross-device timer countdowns, session takeover, and active context migration across macOS, Android, and Web PWA:
 
 ### Architecture & Components
 1. **Cloudflare Worker & Durable Object (`worker/src/index.js`):**
    - Hosted at `https://pomo-sync.mishra-roshanraj.workers.dev` with WebSocket endpoint `wss://pomo-sync.mishra-roshanraj.workers.dev/ws`.
-   - Uses Durable Objects (`SyncRoom`) to hold active session state in memory and fan out state updates instantly to connected clients.
+   - Uses Cloudflare Durable Objects (`SyncRoom`) for state persistence in memory and sub-20ms multi-device presence broadcast fanout.
+   - REST endpoints (`GET /api/session`, `POST /api/session`) serve as fallback transport for environments without persistent WebSocket connectivity.
 2. **Target Timestamp Model:**
    - Instead of streaming every second, active clients broadcast state transitions with `endsAt = now() + remainingDuration`.
    - The Cloudflare Worker dynamically computes `liveRemaining = max(0, endsAt - now())` on every poll and push.
-3. **Client-Side Deserialization & Local 1-Second Ticker:**
+   - Displaced device guard: stale `stopped` or `paused` packets sent by a displaced client are ignored if another device has taken over and is actively running.
+3. **Active Task & Activity Tags Migration (v1.5.1):**
+   - `RemoteSession` model encapsulates `taskTitle`, `taskId`, `taskJson`, and a structured `tags` list (`List<TrackerTag>`).
+   - When an operator initiates session takeover on the local device via `RemoteSessionPresenceBanner`, `TimerCubit.takeOverRemoteSession(session)` adopts:
+     - Remaining countdown duration and total lap duration.
+     - Active lap type (`work`, `shortBreak`, `longBreak`) and lap number counter.
+     - Full active `NotionTask` reconstructed from `taskJson` or task title/ID.
+     - Active activity tag from `tags` list or `tagName`/`tagId`.
+   - The local Timer UI immediately updates the active task badge, tag icons, and running timer ring without requiring manual re-selection.
+4. **Client-Side Deserialization & Local 1-Second Ticker:**
    - `RemoteSession.fromJson` (`lib/models/remote_session.dart`) safely parses ISO-8601 strings and numeric millisecond epochs.
    - When receiving an active remote session, `RemoteSessionService` starts `_startRemoteTick()` to decrement remaining seconds locally each second.
-4. **Native Android Notification Shade Mirroring:**
-   - Calls `AndroidNotificationService().showRunningRemoteNotification(session)` every second.
-   - On Android, `TimerForegroundService.kt` runs with `startForeground` safety checks and direct `NotificationManager.notify()` fallbacks, ensuring the notification shade is immediately visible even while the app is backgrounded.
+5. **Cross-Platform Mirroring:**
+   - **Android**: Calls `AndroidNotificationService().showRunningRemoteNotification(session)` every second. `TimerForegroundService.kt` runs with `startForeground` safety checks and direct `NotificationManager.notify()` fallbacks, ensuring the notification shade is immediately visible even while backgrounded.
+   - **macOS Desktop**: When the local timer is idle, `MacosMenuBarService` displays the live remote countdown and status in the native macOS menu bar status item.
+   - **Web PWA**: Dynamically updates the browser tab title (`(MM:SS - Device) Lap`) to reflect remote countdowns in background tabs.
+
+---
+
+## 13. Brand Identity, Material 3 Adaptive Icons & Asset Architecture
+
+Shipped in `v1.5.0`, `pomo` adopts the visual identity and aesthetic design system of rawshn.com:
+
+### A. Color Palette & Neon Glass Aesthetic
+- **Background Base**: Obsidian deep black (`#0A0C10`).
+- **Primary Accent**: Electric Cyan (`#00F0FF`).
+- **Secondary Accent**: Neon Magenta (`#FF00AA`).
+- **Surface Elevation**: Semi-transparent dark glass surfaces with subtle borders and neon glow states.
+
+### B. Android Material 3 Adaptive Icon
+- **Vector Foreground**: `assets/images/pomo_adaptive_foreground.svg` rendered across all Android density buckets (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) under `android/app/src/main/res/drawable-*/ic_launcher_foreground.png`.
+- **Obsidian Background**: Defined in `android/app/src/main/res/values/colors.xml` (`ic_launcher_background = #0A0C10`).
+- **Adaptive Definition**: `android/app/src/main/res/mipmap-anydpi-v26/launcher_icon.xml` configures foreground and background layers for Android 8.0+ devices.
+
+### C. Android 13+ Monochrome Themed Icon
+- Android 13 (API 33) introduced Material You dynamic themed icons, tinting app icons with user wallpaper palette colors.
+- `pomo` includes `ic_launcher_monochrome.png` across all density buckets, linked via `<monochrome android:drawable="@drawable/ic_launcher_monochrome" />` in `launcher_icon.xml`.
+
+### D. Splash Screen & Cross-Platform Parity
+- **Android Splash**: Native launch splash configured via `flutter_native_splash`, displaying high-resolution obsidian splash artwork (`assets/images/pomo_splash.png`).
+- **macOS Desktop**: Multi-resolution `AppIcon.appiconset` containing native icons (`16x16` up to `1024x1024` with `@2x` and `@3x` retina assets).
+- **Windows**: Multi-size `app_icon.ico` resource bundle.
+- **Web PWA**: Maskable icons (`192x192` and `512x512`) in `web/manifest.json` ensuring proper framing and rounding across mobile browsers and desktop PWAs.
 

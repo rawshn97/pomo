@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-10-22
+
+### Added
+- Real-time active task and activity tags migration during cross-device session takeover between phone, macOS, and web PWA.
+- Extended `RemoteSession` model with `NotionTask` reconstruction and structured `tags` list parsing.
+- Immediate UI updates on the local Timer tab upon takeover: automatically populates task label, Notion task metadata, and tracker tag selection without manual re-entry.
+- Cloudflare Edge Worker and REST endpoint support for `task`, `taskJson`, and `tags` session attributes.
+
+## [1.5.0] - 2026-10-22
+
+### Added
+- Android Material 3 adaptive icon with Rawshn brand identity (obsidian `#0A0C10`, cyan `#00F0FF`, magenta `#FF00AA`).
+- Android 13+ dynamic theming with monochrome themed icon (`ic_launcher_monochrome.png`).
+- Multi-density launcher assets across `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, and `xxxhdpi`.
+- Obsidian dark glass splash screen assets and vector SVG artwork.
+- Multi-resolution macOS AppIcon, Windows icon (`.ico`), and Web PWA maskable icons (`192x192`, `512x512`).
+
+## [1.4.9] - 2026-10-22
+
+### Fixed
+- Resolved remote session takeover reset bug and enabled seamless bidirectional handover between devices.
+- Guarded Cloudflare Worker session state so displaced devices sending stale `stopped` or `paused` updates do not cancel active sessions taken over by another device.
+
 ## [1.4.8] - 2026-10-22
 
 ### Added
