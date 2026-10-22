@@ -2,7 +2,7 @@
 
 **Spec file:** `specs/remote-sync.md`  
 **Parent index:** [`SPEC.md`](../SPEC.md)  
-**Shipped in:** `v1.4.6` (initial WebSocket relay), `v1.4.7` (payload deserialization fix + 1-second local notification tick)  
+**Shipped in:** `v1.4.6` (initial WebSocket relay), `v1.4.7` (payload deserialization fix + 1-second local notification tick), `v1.4.8` (omnidirectional 3-way sync, macOS menu bar sync, PWA dynamic title, session takeover, and 10s heartbeat throttling)  
 **Related files:**
 - `worker/src/index.js` (Cloudflare Worker + Durable Objects WebSocket relay)
 - `worker/wrangler.toml` (Cloudflare Worker configuration)

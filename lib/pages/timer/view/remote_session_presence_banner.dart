@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/remote_session_service.dart';
+import 'package:pomo/singletons/prefs.dart';
 
 /// Renders a live cross-device presence banner when another linked device is
 /// actively running a focus timer.
@@ -24,7 +25,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
     return ValueListenableBuilder<RemoteSession?>(
       valueListenable: RemoteSessionService().remoteSessionNotifier,
       builder: (context, remoteSession, _) {
-        if (remoteSession == null || !remoteSession.isRunning) {
+        if (remoteSession == null || remoteSession.remainingSeconds <= 0) {
           return const SizedBox.shrink();
         }
 
@@ -34,12 +35,19 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
             : 'Focus Session';
         final taskDisplay = remoteSession.taskTitle;
 
+        final deviceLower = remoteSession.deviceName.toLowerCase();
         final deviceIcon =
-            remoteSession.deviceName.toLowerCase().contains('mobile')
+            deviceLower.contains('mobile') || deviceLower.contains('android')
                 ? Icons.phone_android
-                : (remoteSession.deviceName.toLowerCase().contains('mac')
-                    ? Icons.laptop_mac
-                    : Icons.devices);
+                : (deviceLower.contains('web')
+                    ? Icons.language
+                    : (deviceLower.contains('mac')
+                        ? Icons.laptop_mac
+                        : Icons.devices));
+
+        final isPaused = remoteSession.status == 'paused';
+        final accentColor = isPaused ? Colors.amberAccent : Colors.greenAccent;
+        final statusText = isPaused ? 'paused' : 'focusing';
 
         return Container(
           margin: const EdgeInsets.only(top: 8, bottom: 8),
@@ -49,12 +57,12 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                 .withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.greenAccent.withValues(alpha: 0.6),
+              color: accentColor.withValues(alpha: 0.6),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.greenAccent.withValues(alpha: 0.08),
+                color: accentColor.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -67,12 +75,12 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                 height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.greenAccent.withValues(alpha: 0.15),
+                  color: accentColor.withValues(alpha: 0.15),
                 ),
                 child: Icon(
                   deviceIcon,
                   size: 16,
-                  color: Colors.greenAccent.shade400,
+                  color: accentColor,
                 ),
               ),
               const SizedBox(width: 10),
@@ -84,7 +92,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${remoteSession.deviceName} is focusing',
+                          '${remoteSession.deviceName} is $statusText',
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
@@ -97,14 +105,14 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                             vertical: 1,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.greenAccent.withValues(alpha: 0.2),
+                            color: accentColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             remoteSession.formattedRemaining,
                             style: theme.textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.greenAccent.shade200,
+                              color: accentColor,
                             ),
                           ),
                         ),
@@ -122,6 +130,40 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  if (remoteSession.tagName != null) {
+                    final matches = Prefs.trackerTags.where(
+                      (t) => t.name == remoteSession.tagName,
+                    );
+                    if (matches.isNotEmpty) {
+                      context.read<TimerCubit>().setActiveTags([matches.first]);
+                    }
+                  }
+                  context.read<TimerCubit>().start();
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Text(
+                    'Take Over',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],

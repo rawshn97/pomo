@@ -11,8 +11,10 @@ import 'package:pomo/app/view/app.dart';
 import 'package:pomo/desktop/desktop_window_service.dart';
 import 'package:pomo/helpers/duration_helper.dart';
 import 'package:pomo/helpers/session_helper.dart';
+import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
+import 'package:pomo/services/remote_session_service.dart';
 
 class MacosMenuBarService {
   MacosMenuBarService._();
@@ -81,6 +83,12 @@ class MacosMenuBarService {
 
     try {
       instance._timerCubit = timerCubit;
+      RemoteSessionService()
+          .remoteSessionNotifier
+          .removeListener(instance._onRemoteSessionChanged);
+      RemoteSessionService()
+          .remoteSessionNotifier
+          .addListener(instance._onRemoteSessionChanged);
       await instance._syncMenuIfNeeded(force: true);
     } catch (error, stackTrace) {
       developer.log(
@@ -131,12 +139,64 @@ class MacosMenuBarService {
     instance._timerCubit = context.read<TimerCubit>();
   }
 
+  void _onRemoteSessionChanged() {
+    final timerCubit = _timerCubit;
+    if (timerCubit != null && SessionHelper.isSessionActive(timerCubit.state)) {
+      // Local timer takes precedence
+      return;
+    }
+    final remoteSession = RemoteSessionService().remoteSessionNotifier.value;
+    unawaited(_syncRemoteSessionToMenuBar(remoteSession));
+  }
+
+  Future<void> _syncRemoteSessionToMenuBar(RemoteSession? remoteSession) async {
+    if (kIsWeb || !Platform.isMacOS || !_iconReady) {
+      return;
+    }
+
+    final timerCubit = _timerCubit;
+    if (timerCubit != null && SessionHelper.isSessionActive(timerCubit.state)) {
+      return;
+    }
+
+    if (remoteSession == null || !remoteSession.isRunning) {
+      await _channel.invokeMethod<void>('setTitle', {'title': _idleTrayTitle});
+      await _channel.invokeMethod<void>('setToolTip', {
+        'toolTip': 'Pomo - Pomodoro timer',
+      });
+      return;
+    }
+
+    final deviceLower = remoteSession.deviceName.toLowerCase();
+    final deviceEmoji =
+        deviceLower.contains('mobile') || deviceLower.contains('android')
+            ? '📱'
+            : (deviceLower.contains('web') ? '🌐' : '💻');
+    final title = '$deviceEmoji ${remoteSession.formattedRemaining}';
+    final tagText = remoteSession.tagName ?? 'Focus';
+    final tooltip =
+        '${remoteSession.deviceName} is focusing: $tagText (${remoteSession.formattedRemaining})';
+
+    await _channel.invokeMethod<void>('setTitle', {'title': title});
+    await _channel.invokeMethod<void>('setToolTip', {'toolTip': tooltip});
+  }
+
   Future<void> updateFromState({
     required TimerState timerState,
     required SettingsState settingsState,
   }) async {
     if (kIsWeb || !Platform.isMacOS || !_iconReady) {
       return;
+    }
+
+    final localActive = SessionHelper.isSessionActive(timerState);
+    if (!localActive) {
+      final remoteSession = RemoteSessionService().remoteSessionNotifier.value;
+      if (remoteSession != null && remoteSession.isRunning) {
+        await _syncRemoteSessionToMenuBar(remoteSession);
+        await _syncMenuIfNeeded(timerState: timerState);
+        return;
+      }
     }
 
     final tooltip = _tooltip(timerState, settingsState);
@@ -147,8 +207,7 @@ class MacosMenuBarService {
       lap: timerState.lap,
       settingsState: settingsState,
     );
-    final title =
-        SessionHelper.isSessionActive(timerState) ? time : _idleTrayTitle;
+    final title = localActive ? time : _idleTrayTitle;
     await _channel.invokeMethod<void>('setTitle', {'title': title});
 
     await _syncMenuIfNeeded(timerState: timerState);

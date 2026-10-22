@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
+import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/remote_session_service.dart';
 import 'package:pomo/singletons/prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,6 +57,22 @@ void main() {
       final id2 = Prefs.deviceId;
       expect(id1, isNotEmpty);
       expect(id1, equals(id2));
+    });
+
+    test(
+        'startRepeatingBroadcast and pauseRepeatingBroadcast manage timers cleanly',
+        () {
+      final service = RemoteSessionService();
+      // Should not throw or crash when called with callbacks
+      service.startRepeatingBroadcast(
+        getTimerState: () => const TimerState(),
+        getSettingsState: () => const SettingsState(),
+      );
+      service.pauseRepeatingBroadcast(
+        timerState: const TimerState(duration: Duration(seconds: 30)),
+        settingsState: const SettingsState(),
+      );
+      service.stopRepeatingBroadcast();
     });
   });
 }

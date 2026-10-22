@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
@@ -234,6 +235,12 @@ class RemoteSessionService {
     _remoteTickTimer?.cancel();
     if (!session.isRunning || session.remainingSeconds <= 0) return;
 
+    if (kIsWeb) {
+      _updateWebTitle(
+        title: '(${session.formattedRemaining} - ${session.deviceName}) Focus',
+      );
+    }
+
     _remoteTickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final current = remoteSessionNotifier.value;
       if (current == null ||
@@ -249,12 +256,32 @@ class RemoteSessionService {
       if (!kIsWeb && Platform.isAndroid) {
         _syncAndroidNotification(updated);
       }
+      if (kIsWeb) {
+        _updateWebTitle(
+          title:
+              '(${updated.formattedRemaining} - ${updated.deviceName}) Focus',
+        );
+      }
     });
   }
 
   void _stopRemoteTick() {
     _remoteTickTimer?.cancel();
     _remoteTickTimer = null;
+    if (kIsWeb) {
+      _updateWebTitle();
+    }
+  }
+
+  void _updateWebTitle({String? title}) {
+    if (!kIsWeb) return;
+    try {
+      SystemChrome.setApplicationSwitcherDescription(
+        ApplicationSwitcherDescription(
+          label: title ?? 'Focus - Pomodoro Timer',
+        ),
+      );
+    } catch (_) {}
   }
 
   void _syncAndroidNotification(RemoteSession session) {
@@ -299,7 +326,9 @@ class RemoteSessionService {
     final payload = {
       'deviceId': Prefs.deviceId,
       'deviceName': deviceName,
-      'status': timerState.status == TimerStatus.running ? 'running' : 'paused',
+      'status': timerState.status == TimerStatus.running
+          ? 'running'
+          : (timerState.duration > Duration.zero ? 'paused' : 'stopped'),
       'lap': timerState.lap.name,
       'lapNumber': timerState.lapNumber > 0 ? timerState.lapNumber : 1,
       'remainingSeconds': remainingSecs,
@@ -376,27 +405,52 @@ class RemoteSessionService {
   }
 
   /// Starts repeating broadcasts every 10 seconds while local timer is active.
+  /// If [getTimerState] and [getSettingsState] callbacks are provided, they are
+  /// evaluated on each 10-second tick to ensure the latest state is broadcast.
   void startRepeatingBroadcast({
-    required TimerState timerState,
-    required SettingsState settingsState,
+    TimerState? timerState,
+    SettingsState? settingsState,
+    TimerState Function()? getTimerState,
+    SettingsState Function()? getSettingsState,
   }) {
     _broadcastTimer?.cancel();
-    unawaited(
-      broadcastSession(
-        timerState: timerState,
-        settingsState: settingsState,
-      ),
-    );
+    final initialTimer = timerState ?? getTimerState?.call();
+    final initialSettings = settingsState ?? getSettingsState?.call();
+    if (initialTimer != null && initialSettings != null) {
+      unawaited(
+        broadcastSession(
+          timerState: initialTimer,
+          settingsState: initialSettings,
+        ),
+      );
+    }
     _broadcastTimer = Timer.periodic(
       const Duration(seconds: 10),
       (_) {
-        unawaited(
-          broadcastSession(
-            timerState: timerState,
-            settingsState: settingsState,
-          ),
-        );
+        final currentTimer = getTimerState?.call() ?? timerState;
+        final currentSettings = getSettingsState?.call() ?? settingsState;
+        if (currentTimer != null && currentSettings != null) {
+          unawaited(
+            broadcastSession(
+              timerState: currentTimer,
+              settingsState: currentSettings,
+            ),
+          );
+        }
       },
+    );
+  }
+
+  /// Pauses the repeating heartbeat and reports paused status to the relay.
+  Future<void> pauseRepeatingBroadcast({
+    required TimerState timerState,
+    required SettingsState settingsState,
+  }) async {
+    _broadcastTimer?.cancel();
+    _broadcastTimer = null;
+    await broadcastSession(
+      timerState: timerState,
+      settingsState: settingsState,
     );
   }
 

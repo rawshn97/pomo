@@ -212,6 +212,12 @@ class TimerCubit extends Cubit<TimerState> {
   bool get canModifyTags =>
       state.status != TimerStatus.running || state.lap != TimerLap.work;
 
+  /// Set active tags on the timer (used e.g. when taking over a remote session).
+  void setActiveTags(List<TrackerTag> tags) {
+    if (!canModifyTags) return;
+    _persistActiveTags(tags);
+  }
+
   /// Toggle an activity tag used for hourly credit.
   ///
   /// Returns false when [canModifyTags] is false.

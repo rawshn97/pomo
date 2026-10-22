@@ -458,26 +458,68 @@ class TimerPage extends StatelessWidget {
               },
             ),
             BlocListener<TimerCubit, TimerState>(
+              listenWhen: (previous, current) {
+                return previous.status != current.status ||
+                    previous.lap != current.lap ||
+                    previous.lapNumber != current.lapNumber ||
+                    previous.activeTask != current.activeTask ||
+                    previous.activeTags != current.activeTags;
+              },
               listener: (context, state) {
                 if (state.status == TimerStatus.running) {
                   RemoteSessionService().startRepeatingBroadcast(
-                    timerState: state,
-                    settingsState: settingsState,
+                    getTimerState: () => context.read<TimerCubit>().state,
+                    getSettingsState: () => context.read<SettingsCubit>().state,
+                  );
+                } else if (state.duration > Duration.zero) {
+                  unawaited(
+                    RemoteSessionService().pauseRepeatingBroadcast(
+                      timerState: state,
+                      settingsState: settingsState,
+                    ),
                   );
                 } else {
                   RemoteSessionService().stopRepeatingBroadcast();
                 }
-
-                if (kIsWeb && WebPwaService().isPipActive) {
+              },
+            ),
+            BlocListener<TimerCubit, TimerState>(
+              listener: (context, state) {
+                if (kIsWeb) {
                   final durationStr = DurationHelper.negativeFormat(
                     duration: state.duration,
                     lap: state.lap,
                     settingsState: settingsState,
                   );
-                  WebPwaService().updatePip(
-                    durationStr,
-                    isRunning: state.status == TimerStatus.running,
-                  );
+                  if (WebPwaService().isPipActive) {
+                    WebPwaService().updatePip(
+                      durationStr,
+                      isRunning: state.status == TimerStatus.running,
+                    );
+                  }
+                  if (state.status == TimerStatus.running) {
+                    SystemChrome.setApplicationSwitcherDescription(
+                      ApplicationSwitcherDescription(
+                        label: '($durationStr) Focus',
+                      ),
+                    );
+                  } else if (state.duration > Duration.zero) {
+                    SystemChrome.setApplicationSwitcherDescription(
+                      ApplicationSwitcherDescription(
+                        label: '($durationStr - Paused) Focus',
+                      ),
+                    );
+                  } else {
+                    final remote =
+                        RemoteSessionService().remoteSessionNotifier.value;
+                    if (remote == null || !remote.isRunning) {
+                      SystemChrome.setApplicationSwitcherDescription(
+                        const ApplicationSwitcherDescription(
+                          label: 'Focus - Pomodoro Timer',
+                        ),
+                      );
+                    }
+                  }
                 }
 
                 AndroidNotificationService().updateTimerState(
