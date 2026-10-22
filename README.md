@@ -3,7 +3,7 @@
 Cross-platform Pomodoro timer with 24-hour hourly time tracking, Notion PARA sync, and RGB webhooks.
 
 **Live Web App (PWA):** [pomo-focus-sand.vercel.app](https://pomo-focus-sand.vercel.app)  
-**Latest Release:** [GitHub Releases (v1.3.9)](https://github.com/rawshn97/pomo/releases/tag/v1.3.9) (Android APK with in-app OTA, macOS DMG)  
+**Latest Release:** [GitHub Releases (v1.4.7)](https://github.com/rawshn97/pomo/releases/tag/v1.4.7) (Android APK with in-app OTA, macOS DMG)  
 **Docs:** [SPEC.md](SPEC.md) (shipped behavior) · [AGENTS.md](AGENTS.md) (contributor & agent rules) · [ARCHITECTURE.md](ARCHITECTURE.md) (system design)
 
 [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
@@ -44,16 +44,23 @@ Cross-platform Pomodoro timer with 24-hour hourly time tracking, Notion PARA syn
 - Quiet hours: suppress reminders; empty slots can fill as Sleep & Rest
 - Android: exact hourly alarms, shade notifications (Log Work / Switch Tag / Open Grid)
 
+### Real-time cross-device sync
+
+- Real-time timer countdown sync between macOS and Android via Cloudflare Edge Worker WebSocket relay
+- Active macOS sessions automatically mirror to the Android notification shade with smooth 1-second ticks
+- Live session presence pill banner on the Timer tab
+
 ### Integrations
 
 - **Webhooks:** POST RGB JSON on timer events (comma-separated URLs). Built for [Home Assistant](https://www.home-assistant.io/docs/automation/trigger/#webhook-trigger) ambient lighting.
 - **Notion:** Time Logs, Hourly Timeline, activity tag registry (optional proxy on web; see [specs/web.md](specs/web.md)).
+- **Cloudflare Edge Worker:** WebSocket relay and REST state store (`worker/`) hosted at `pomo-sync.mishra-roshanraj.workers.dev`.
 
 ### Platforms
 
 | Platform | Install | Notes |
 |----------|---------|--------|
-| **Android** | [Releases (v1.3.9)](https://github.com/rawshn97/pomo/releases/tag/v1.3.9) → `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). |
+| **Android** | [Releases (v1.4.7)](https://github.com/rawshn97/pomo/releases/tag/v1.4.7) → `pomo-production.apk` | Production package `com.recoskyler.pomo`. In-app OTA after first install (see below). |
 | **macOS** | [Releases](https://github.com/rawshn97/pomo/releases) or [build locally](#macos) | Menu bar, floating overlay, desktop notifications, launch at login |
 | **Web (PWA)** | [Live App](https://pomo-focus-sand.vercel.app) or deploy via `./scripts/build-web.sh` | CanvasKit PWA; pair with Vercel proxy for Notion on browser |
 

@@ -13,7 +13,8 @@ Agent operating rules and workflow entry: see `AGENTS.md`. This file is the deta
 - `lib/pages/`: BLoC/Cubit feature modules (`timer`, `settings`, `about`).
 - `lib/services/`: Background execution and platform services (`TimerTickService`).
 - `lib/singletons/`: Shared preferences (`Prefs`) and global singletons.
-- `scripts/`: Build and utility scripts (`build-web.sh`, `generate-sounds.py`, `setup.sh`, `verify.sh`).
+- `worker/`: Cloudflare Edge Worker WebSocket relay and REST state store (`worker/src/index.js`, `worker/wrangler.toml`).
+- `scripts/`: Build and utility scripts (`build-web.sh`, `generate-sounds.py`, `setup.sh`, `verify.sh`, `build_android_release_apk.sh`, `deploy_android_update.sh`).
 - `assets/`: Sound effects (`click.aac`, `pop.aac`, `ding_dong.aac`, `chime.wav`, `bell.wav`) and SVG/PNG icons.
 
 ## 2. Token-Optimized Command Guidelines (`rtk`)
