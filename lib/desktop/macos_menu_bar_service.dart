@@ -267,14 +267,18 @@ class MacosMenuBarService {
 
     final remote = RemoteSessionService().remoteSessionNotifier.value;
     final canTakeOver = !sessionActive && remote != null && remote.isRunning;
+    final wasDisplaced = RemoteSessionService().wasDisplacedByRemote;
+    final takeoverLabel = wasDisplaced
+        ? 'Take over back (${remote?.formattedRemaining ?? ""})'
+        : 'Take over from ${remote?.deviceName} '
+            '(${remote?.formattedRemaining ?? ""})';
 
     await _channel.invokeMethod<void>('setContextMenu', {
       'items': [
         if (canTakeOver) ...[
           {
             'key': 'takeover',
-            'label': 'Take over from ${remote.deviceName} '
-                '(${remote.formattedRemaining})',
+            'label': takeoverLabel,
             'type': 'normal',
           },
           {'type': 'separator'},
@@ -326,6 +330,7 @@ class MacosMenuBarService {
       case 'takeover':
         final remote = RemoteSessionService().remoteSessionNotifier.value;
         if (remote != null && remote.isRunning) {
+          RemoteSessionService().clearDisplacedFlag();
           timerCubit.adoptRemoteSession(remote);
         }
       case 'toggle':

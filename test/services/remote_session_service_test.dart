@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/remote_session_service.dart';
@@ -71,6 +72,38 @@ void main() {
         )
         ..stopRepeatingBroadcast();
       expect(service, isNotNull);
+    });
+
+    test('hasActiveRemoteSession reflects non-local running session', () {
+      final service = RemoteSessionService();
+      expect(service.hasActiveRemoteSession, isFalse);
+
+      service.remoteSessionNotifier.value = RemoteSession(
+        deviceId: 'other_device',
+        deviceName: 'Android',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 600,
+        totalSeconds: 1500,
+        updatedAt: DateTime.now(),
+      );
+      expect(service.hasActiveRemoteSession, isTrue);
+
+      service.remoteSessionNotifier.value = null;
+      expect(service.hasActiveRemoteSession, isFalse);
+    });
+
+    test('attachTimerCubit and clearDisplacedFlag handle displacement state',
+        () {
+      final service = RemoteSessionService();
+      final cubit = TimerCubit();
+      service.attachTimerCubit(cubit);
+
+      service.clearDisplacedFlag();
+      expect(service.wasDisplacedByRemote, isFalse);
+
+      cubit.close();
     });
   });
 }

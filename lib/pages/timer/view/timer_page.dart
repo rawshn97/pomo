@@ -472,14 +472,18 @@ class TimerPage extends StatelessWidget {
                     getSettingsState: () => context.read<SettingsCubit>().state,
                   );
                 } else if (state.duration > Duration.zero) {
-                  unawaited(
-                    RemoteSessionService().pauseRepeatingBroadcast(
-                      timerState: state,
-                      settingsState: settingsState,
-                    ),
-                  );
+                  if (!RemoteSessionService().hasActiveRemoteSession) {
+                    unawaited(
+                      RemoteSessionService().pauseRepeatingBroadcast(
+                        timerState: state,
+                        settingsState: settingsState,
+                      ),
+                    );
+                  }
                 } else {
-                  RemoteSessionService().stopRepeatingBroadcast();
+                  if (!RemoteSessionService().hasActiveRemoteSession) {
+                    RemoteSessionService().stopRepeatingBroadcast();
+                  }
                 }
               },
             ),
@@ -556,7 +560,9 @@ class _TimerViewState extends State<TimerView> {
   void initState() {
     super.initState();
     _focusNode = FocusNode();
-    AndroidNotificationService().init(context.read<TimerCubit>());
+    final timerCubit = context.read<TimerCubit>();
+    AndroidNotificationService().init(timerCubit);
+    RemoteSessionService().attachTimerCubit(timerCubit);
     RemoteSessionService().startPolling();
     RemoteSessionService()
         .remoteSessionNotifier
@@ -574,9 +580,10 @@ class _TimerViewState extends State<TimerView> {
         remote.deviceId.isNotEmpty &&
         remote.deviceId != Prefs.deviceId) {
       final timerCubit = context.read<TimerCubit>();
-      if (timerCubit.state.status == TimerStatus.running) {
-        // Another linked device took over; pause local timer to yield.
-        timerCubit.stop();
+      if (timerCubit.state.status == TimerStatus.running ||
+          timerCubit.state.duration > Duration.zero) {
+        // Another linked device took over; stop and reset local timer cleanly.
+        timerCubit.resetForRemoteTakeover();
       }
     }
   }

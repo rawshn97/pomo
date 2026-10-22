@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
+import 'package:pomo/services/remote_session_service.dart';
 import 'package:pomo/services/timer_tick_service.dart';
 
 /// Web and non-desktop fallback that passes through the main app tree
@@ -24,8 +25,10 @@ class _DesktopShellState extends State<DesktopShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        final timerCubit = context.read<TimerCubit>();
+        RemoteSessionService().attachTimerCubit(timerCubit);
         TimerTickService.start(
-          timerCubit: context.read<TimerCubit>(),
+          timerCubit: timerCubit,
           settingsCubit: context.read<SettingsCubit>(),
         );
       }

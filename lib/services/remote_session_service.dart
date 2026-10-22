@@ -30,6 +30,8 @@ class RemoteSessionService {
   WebSocketChannel? _wsChannel;
   StreamSubscription<dynamic>? _wsSubscription;
   bool _isWsConnected = false;
+  TimerCubit? _timerCubit;
+  bool _wasDisplacedByRemote = false;
 
   /// Holds the current active session reported by a remote device, if any.
   final ValueNotifier<RemoteSession?> remoteSessionNotifier =
@@ -37,6 +39,31 @@ class RemoteSessionService {
 
   /// Whether a WebSocket connection to the sync relay is active.
   bool get isWebSocketConnected => _isWsConnected;
+
+  /// Whether another linked device is currently running an active focus timer.
+  bool get hasActiveRemoteSession {
+    final remote = remoteSessionNotifier.value;
+    return remote != null &&
+        remote.isRunning &&
+        remote.deviceId.isNotEmpty &&
+        remote.deviceId != Prefs.deviceId;
+  }
+
+  /// Whether this device was running a timer that was displaced by another
+  /// device.
+  bool get wasDisplacedByRemote => _wasDisplacedByRemote;
+
+  /// Clears the displaced flag (e.g. when local user takes over or starts).
+  void clearDisplacedFlag() {
+    _wasDisplacedByRemote = false;
+  }
+
+  /// Attaches the active [TimerCubit] so cross-device takeovers can
+  /// reset the local timer directly even if the timer view is not mounted.
+  void attachTimerCubit(TimerCubit cubit) {
+    _timerCubit = cubit;
+    Logger().d('RemoteSessionService: TimerCubit attached');
+  }
 
   /// Default live Cloudflare Edge Worker sync relay endpoint.
   static const String defaultCloudflareSyncEndpoint =
@@ -124,6 +151,30 @@ class RemoteSessionService {
     _wsChannel = null;
   }
 
+  void _handleDisplacedByRemote(RemoteSession session) {
+    // 1. Cancel local broadcast timer immediately so local device
+    // stops asserting its state over Cloudflare.
+    // Crucial: do NOT call reportStopped(), which would tell Cloudflare
+    // to stop the remote session!
+    _broadcastTimer?.cancel();
+    _broadcastTimer = null;
+
+    // 2. If local timer is running or has partial duration, reset it.
+    final localCubit = _timerCubit;
+    if (localCubit != null) {
+      final localState = localCubit.state;
+      if (localState.status == TimerStatus.running ||
+          localState.duration > Duration.zero) {
+        _wasDisplacedByRemote = true;
+        Logger().i(
+          'RemoteSessionService: ${session.deviceName} took over. '
+          'Resetting local timer.',
+        );
+        localCubit.resetForRemoteTakeover();
+      }
+    }
+  }
+
   void _handleWsMessage(dynamic message) {
     try {
       final data = jsonDecode(message as String) as Map<String, dynamic>;
@@ -135,6 +186,7 @@ class RemoteSessionService {
         if (session.deviceId != Prefs.deviceId) {
           remoteSessionNotifier.value = session;
           if (session.isRunning) {
+            _handleDisplacedByRemote(session);
             _startRemoteTick(session);
             if (!kIsWeb && Platform.isAndroid) {
               _syncAndroidNotification(session);
@@ -205,6 +257,7 @@ class RemoteSessionService {
         if (session.deviceId != Prefs.deviceId) {
           remoteSessionNotifier.value = session;
           if (session.isRunning) {
+            _handleDisplacedByRemote(session);
             _startRemoteTick(session);
             if (!kIsWeb && Platform.isAndroid) {
               _syncAndroidNotification(session);
@@ -290,11 +343,14 @@ class RemoteSessionService {
       final taskText = session.taskTitle;
       final displayContent =
           taskText != null ? '$tagText • $taskText' : tagText;
+      final subText = _wasDisplacedByRemote
+          ? 'Remote Focus • Displaced'
+          : 'Remote Focus • Lap #${session.lapNumber}';
       AndroidNotificationService().updateNotificationRaw(
         title: session.formattedRemaining,
         text: '${session.deviceName} is focusing: $displayContent',
         isRunning: session.isRunning,
-        subText: 'Remote Focus • Lap #${session.lapNumber}',
+        subText: subText,
         bigText: 'Remote focus active on ${session.deviceName}\n'
             'Remaining: ${session.formattedRemaining}\n'
             'Activity: ${session.tagIcon ?? ''} ${session.tagName ?? 'None'}\n'
@@ -381,6 +437,7 @@ class RemoteSessionService {
         _wsChannel!.sink.add(
           jsonEncode({
             'type': 'STOP_SESSION',
+            'deviceId': Prefs.deviceId,
           }),
         );
       } catch (_) {}
@@ -413,6 +470,7 @@ class RemoteSessionService {
     TimerState Function()? getTimerState,
     SettingsState Function()? getSettingsState,
   }) {
+    _wasDisplacedByRemote = false;
     _broadcastTimer?.cancel();
     final initialTimer = timerState ?? getTimerState?.call();
     final initialSettings = settingsState ?? getSettingsState?.call();

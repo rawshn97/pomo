@@ -11,6 +11,7 @@ import 'package:pomo/desktop/macos_menu_bar_service.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/local_notification_service.dart';
+import 'package:pomo/services/remote_session_service.dart';
 import 'package:pomo/services/timer_tick_service.dart';
 
 /// Hosts macOS-only desktop integrations around the main app.
@@ -32,8 +33,10 @@ class _DesktopShellState extends State<DesktopShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        final timerCubit = context.read<TimerCubit>();
+        RemoteSessionService().attachTimerCubit(timerCubit);
         TimerTickService.start(
-          timerCubit: context.read<TimerCubit>(),
+          timerCubit: timerCubit,
           settingsCubit: context.read<SettingsCubit>(),
         );
         _initDesktop();

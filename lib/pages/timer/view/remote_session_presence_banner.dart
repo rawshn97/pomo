@@ -49,10 +49,10 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
         final isPaused = remoteSession.status == 'paused';
         final accentColor = isPaused ? Colors.amberAccent : Colors.greenAccent;
         final statusText = isPaused ? 'paused' : 'focusing';
-        final headline = hasLocalProgress
-            ? '${remoteSession.deviceName} is $statusText'
-            : '${remoteSession.deviceName} is $statusText';
-        final buttonLabel = hasLocalProgress ? 'Take Over Back' : 'Take Over';
+        final wasDisplaced = RemoteSessionService().wasDisplacedByRemote;
+        final buttonLabel =
+            (hasLocalProgress || wasDisplaced) ? 'Take Over Back' : 'Take Over';
+        final headline = '${remoteSession.deviceName} is $statusText';
 
         return Container(
           margin: const EdgeInsets.only(top: 8, bottom: 8),
@@ -140,6 +140,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
+                  RemoteSessionService().clearDisplacedFlag();
                   context.read<TimerCubit>().adoptRemoteSession(remoteSession);
                 },
                 borderRadius: BorderRadius.circular(8),

@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/models/tracker_tag.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
@@ -266,6 +267,53 @@ void main() {
       expect(cubit.canModifyTags, isFalse);
       expect(cubit.toggleTag(reading), isFalse);
       expect(cubit.state.activeTags, [deepWork]);
+      cubit.close();
+    });
+
+    test('resetForRemoteTakeover stops and resets duration cleanly', () {
+      final cubit = TimerCubit()
+        ..start()
+        ..tick(
+          const SettingsState(),
+          const Duration(seconds: 45),
+        );
+
+      expect(cubit.state.status, TimerStatus.running);
+      expect(cubit.state.duration, const Duration(seconds: 45));
+
+      cubit.resetForRemoteTakeover();
+
+      expect(cubit.state.status, TimerStatus.stopped);
+      expect(cubit.state.duration, Duration.zero);
+      expect(Prefs.duration, Duration.zero);
+      expect(Prefs.timerStatus, TimerStatus.stopped);
+      cubit.close();
+    });
+
+    test('adoptRemoteSession calculates elapsed time and begins running', () {
+      final cubit = TimerCubit();
+      final remote = RemoteSession(
+        deviceId: 'dev_remote_laptop',
+        deviceName: 'macOS',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 2,
+        remainingSeconds: 900,
+        totalSeconds: 1500,
+        tagName: 'Coding',
+        tagIcon: '💻',
+        updatedAt: DateTime.now(),
+      );
+
+      cubit.adoptRemoteSession(remote);
+
+      expect(cubit.state.status, TimerStatus.running);
+      expect(cubit.state.duration, const Duration(seconds: 600));
+      expect(cubit.state.lap, TimerLap.work);
+      expect(cubit.state.lapNumber, 2);
+      expect(cubit.state.activeTags.first.name, 'Coding');
+      expect(Prefs.timerStatus, TimerStatus.running);
+      expect(Prefs.duration, const Duration(seconds: 600));
       cubit.close();
     });
   });

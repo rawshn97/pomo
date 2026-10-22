@@ -102,11 +102,32 @@ export class SyncRoom {
 
   handleSessionUpdate(body) {
     if (body.status === "stopped") {
+      // Displaced devices sending a stale stopped update must not clear
+      // another device's active session.
+      if (this.session && body.deviceId && this.session.deviceId !== body.deviceId) {
+        return new Response(JSON.stringify({ success: true, ignored: true }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       this.session = null;
       this.broadcast({ type: "SESSION_IDLE" });
       return new Response(JSON.stringify({ success: true, active: false }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    if (body.status === "paused") {
+      // If another device is actively running, ignore paused reports from displaced devices.
+      if (
+        this.session &&
+        body.deviceId &&
+        this.session.deviceId !== body.deviceId &&
+        this.session.status === "running"
+      ) {
+        return new Response(JSON.stringify({ success: true, ignored: true }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
     }
 
     const now = new Date();
@@ -151,6 +172,13 @@ export class SyncRoom {
         this.handleSessionUpdate(data.payload);
       }
       if (data.type === "STOP_SESSION") {
+        if (
+          this.session &&
+          data.deviceId &&
+          this.session.deviceId !== data.deviceId
+        ) {
+          return;
+        }
         this.session = null;
         this.broadcast({ type: "SESSION_IDLE" }, ws);
       }

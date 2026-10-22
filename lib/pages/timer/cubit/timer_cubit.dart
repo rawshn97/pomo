@@ -219,6 +219,23 @@ class TimerCubit extends Cubit<TimerState> {
     _persistActiveTags(tags);
   }
 
+  /// Silently stops and resets the local timer when another linked device
+  /// takes over the focus session. Does NOT finalize or log partial minutes
+  /// to Notion because the active session continues on the destination device.
+  void resetForRemoteTakeover() {
+    _tagSegmentStartedAt = null;
+    _tagCreditedMinutes = 0;
+    Prefs.duration = Duration.zero;
+    Prefs.timerStatus = TimerStatus.stopped;
+
+    emit(
+      state.copyWith(
+        status: () => TimerStatus.stopped,
+        duration: () => Duration.zero,
+      ),
+    );
+  }
+
   /// Adopt a remote focus session from another linked device (Take Over).
   /// Synchronizes elapsed lap duration, lap type, lap number, and tag,
   /// then immediately starts the local countdown.
@@ -233,6 +250,10 @@ class TimerCubit extends Cubit<TimerState> {
     );
     final newDuration = Duration(seconds: elapsedSecs);
     Prefs.duration = newDuration;
+    Prefs.timerLap = lap;
+    final lapNumber = session.lapNumber > 0 ? session.lapNumber : 1;
+    Prefs.lapNumber = lapNumber;
+    Prefs.timerStatus = TimerStatus.running;
 
     var tags = state.activeTags;
     if (session.tagName != null) {
@@ -241,8 +262,17 @@ class TimerCubit extends Cubit<TimerState> {
       );
       if (matches.isNotEmpty) {
         tags = [matches.first];
-        Prefs.lastTimerTagIds = tags.map((t) => t.id).toList();
+      } else {
+        tags = [
+          TrackerTag(
+            id: 'remote_${session.tagName}',
+            name: session.tagName!,
+            icon: session.tagIcon ?? '🎯',
+            colorHex: '#4285F4',
+          ),
+        ];
       }
+      Prefs.lastTimerTagIds = tags.map((t) => t.id).toList();
     }
 
     emit(
@@ -250,10 +280,12 @@ class TimerCubit extends Cubit<TimerState> {
         status: () => TimerStatus.running,
         duration: () => newDuration,
         lap: () => lap,
-        lapNumber: () => session.lapNumber > 0 ? session.lapNumber : 1,
+        lapNumber: () => lapNumber,
         activeTags: () => tags,
       ),
     );
+
+    _beginTagSegment();
   }
 
   /// Toggle an activity tag used for hourly credit.
