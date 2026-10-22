@@ -96,11 +96,11 @@ void main() {
 
     test('attachTimerCubit and clearDisplacedFlag handle displacement state',
         () {
-      final service = RemoteSessionService();
       final cubit = TimerCubit();
-      service.attachTimerCubit(cubit);
+      final service = RemoteSessionService()
+        ..attachTimerCubit(cubit)
+        ..clearDisplacedFlag();
 
-      service.clearDisplacedFlag();
       expect(service.wasDisplacedByRemote, isFalse);
 
       cubit.close();

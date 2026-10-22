@@ -174,9 +174,11 @@ class MacosMenuBarService {
             : (deviceLower.contains('web') ? '🌐' : '💻');
     final title = '$deviceEmoji ${remoteSession.formattedRemaining}';
     final tagText = remoteSession.tagName ?? 'Focus';
+    final taskText = remoteSession.taskTitle;
     final remaining = remoteSession.formattedRemaining;
+    final detail = taskText != null ? '$tagText • $taskText' : tagText;
     final tooltip =
-        '${remoteSession.deviceName} is focusing: $tagText ($remaining)';
+        '${remoteSession.deviceName} is focusing: $detail ($remaining)';
 
     await _channel.invokeMethod<void>('setTitle', {'title': title});
     await _channel.invokeMethod<void>('setToolTip', {'toolTip': tooltip});

@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pomo/models/notion_task.dart';
 import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/models/tracker_tag.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
@@ -314,6 +315,67 @@ void main() {
       expect(cubit.state.activeTags.first.name, 'Coding');
       expect(Prefs.timerStatus, TimerStatus.running);
       expect(Prefs.duration, const Duration(seconds: 600));
+      cubit.close();
+    });
+
+    test('adoptRemoteSession migrates active task and adds new tag to catalog',
+        () {
+      final cubit = TimerCubit();
+      final remote = RemoteSession(
+        deviceId: 'dev_phone_takeover',
+        deviceName: 'Mobile',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 1000,
+        totalSeconds: 1500,
+        taskId: 'notion_task_1',
+        taskTitle: 'Brand Design Review',
+        taskJson: '{"id":"notion_task_1",'
+            '"title":"Brand Design Review","status":"In Progress"}',
+        tagName: 'Design System',
+        tagIcon: '🎨',
+        tagColorHex: '#FF00AA',
+        updatedAt: DateTime.now(),
+      );
+
+      cubit.adoptRemoteSession(remote);
+
+      expect(cubit.state.status, TimerStatus.running);
+      expect(cubit.state.activeTask, isNotNull);
+      expect(cubit.state.activeTask!.id, equals('notion_task_1'));
+      expect(cubit.state.activeTask!.title, equals('Brand Design Review'));
+      expect(Prefs.activeTask?.title, equals('Brand Design Review'));
+      expect(cubit.state.activeTags.length, equals(1));
+      expect(cubit.state.activeTags.first.name, equals('Design System'));
+      expect(
+        Prefs.trackerTags.any((t) => t.name == 'Design System'),
+        isTrue,
+      );
+      cubit.close();
+    });
+
+    test('adoptRemoteSession clears activeTask when remote has no task', () {
+      final cubit = TimerCubit();
+      Prefs.activeTask = const NotionTask(id: 'old_task', title: 'Old Task');
+
+      final remote = RemoteSession(
+        deviceId: 'dev_phone_untasked',
+        deviceName: 'Mobile',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 1200,
+        totalSeconds: 1500,
+        updatedAt: DateTime.now(),
+      );
+
+      cubit.adoptRemoteSession(remote);
+
+      expect(cubit.state.status, TimerStatus.running);
+      expect(cubit.state.activeTask, isNull);
+      expect(Prefs.activeTask, isNull);
+      expect(cubit.state.activeTags, isEmpty);
       cubit.close();
     });
   });

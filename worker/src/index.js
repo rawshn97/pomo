@@ -148,7 +148,12 @@ export class SyncRoom {
       totalSeconds: body.totalSeconds || remainingSecs,
       tagName: body.tagName || null,
       tagIcon: body.tagIcon || null,
+      tagColorHex: body.tagColorHex || null,
+      tagId: body.tagId || null,
+      tags: Array.isArray(body.tags) ? body.tags : null,
       taskTitle: body.taskTitle || null,
+      taskId: body.taskId || null,
+      taskJson: body.taskJson || null,
       updatedAt: now.toISOString(),
       endsAt: endsAt,
     };

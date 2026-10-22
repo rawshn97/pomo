@@ -84,7 +84,12 @@ export default async function handler(req, res) {
         totalSeconds,
         tagName,
         tagIcon,
+        tagColorHex,
+        tagId,
+        tags,
         taskTitle,
+        taskId,
+        taskJson,
       } = body;
 
       if (status === 'stopped') {
@@ -102,7 +107,12 @@ export default async function handler(req, res) {
         totalSeconds: Number(totalSeconds) || 0,
         tagName: tagName || null,
         tagIcon: tagIcon || null,
+        tagColorHex: tagColorHex || null,
+        tagId: tagId || null,
+        tags: Array.isArray(tags) ? tags : null,
         taskTitle: taskTitle || null,
+        taskId: taskId || null,
+        taskJson: taskJson || null,
         updatedAt: Date.now(),
       };
 

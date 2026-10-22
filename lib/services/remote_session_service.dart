@@ -379,6 +379,10 @@ class RemoteSessionService {
       totalSecs,
     );
 
+    final primaryTag =
+        timerState.activeTags.isNotEmpty ? timerState.activeTags.first : null;
+    final activeTask = timerState.activeTask;
+
     final payload = {
       'deviceId': Prefs.deviceId,
       'deviceName': deviceName,
@@ -389,15 +393,15 @@ class RemoteSessionService {
       'lapNumber': timerState.lapNumber > 0 ? timerState.lapNumber : 1,
       'remainingSeconds': remainingSecs,
       'totalSeconds': totalSecs,
-      'tagName': timerState.activeTags.isNotEmpty
-          ? timerState.activeTags.first.name
-          : null,
-      'tagIcon': timerState.activeTags.isNotEmpty
-          ? timerState.activeTags.first.icon
-          : null,
-      'taskTitle': (timerState.activeTask?.title.isNotEmpty ?? false)
-          ? timerState.activeTask!.title
-          : null,
+      'tagName': primaryTag?.name,
+      'tagIcon': primaryTag?.icon,
+      'tagColorHex': primaryTag?.colorHex,
+      'tagId': primaryTag?.id,
+      'tags': timerState.activeTags.map((t) => t.toJson()).toList(),
+      'taskTitle':
+          (activeTask?.title.isNotEmpty ?? false) ? activeTask!.title : null,
+      'taskId': activeTask?.id,
+      'taskJson': activeTask != null ? jsonEncode(activeTask.toJson()) : null,
     };
 
     // Push immediately over WebSocket if connected (<20ms edge broadcast)

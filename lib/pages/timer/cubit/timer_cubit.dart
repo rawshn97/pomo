@@ -237,8 +237,8 @@ class TimerCubit extends Cubit<TimerState> {
   }
 
   /// Adopt a remote focus session from another linked device (Take Over).
-  /// Synchronizes elapsed lap duration, lap type, lap number, and tag,
-  /// then immediately starts the local countdown.
+  /// Synchronizes elapsed lap duration, lap type, lap number, activity tags,
+  /// and active task, then immediately starts the local countdown.
   void adoptRemoteSession(RemoteSession session) {
     final lap = TimerLap.values.firstWhere(
       (l) => l.name == session.lap,
@@ -255,25 +255,55 @@ class TimerCubit extends Cubit<TimerState> {
     Prefs.lapNumber = lapNumber;
     Prefs.timerStatus = TimerStatus.running;
 
-    var tags = state.activeTags;
-    if (session.tagName != null) {
-      final matches = Prefs.trackerTags.where(
-        (t) => t.name == session.tagName,
-      );
-      if (matches.isNotEmpty) {
-        tags = [matches.first];
-      } else {
-        tags = [
-          TrackerTag(
-            id: 'remote_${session.tagName}',
-            name: session.tagName!,
-            icon: session.tagIcon ?? '🎯',
-            colorHex: '#4285F4',
-          ),
-        ];
+    // 1. Resolve and adopt Activity Tags
+    final resolvedTags = <TrackerTag>[];
+    final catalog = List<TrackerTag>.from(Prefs.trackerTags);
+    var catalogUpdated = false;
+
+    if (session.tags.isNotEmpty) {
+      for (final incoming in session.tags) {
+        final existingIndex = catalog.indexWhere(
+          (t) =>
+              t.id == incoming.id ||
+              t.name.trim().toLowerCase() == incoming.name.trim().toLowerCase(),
+        );
+        if (existingIndex >= 0) {
+          resolvedTags.add(catalog[existingIndex]);
+        } else {
+          catalog.add(incoming);
+          resolvedTags.add(incoming);
+          catalogUpdated = true;
+        }
       }
-      Prefs.lastTimerTagIds = tags.map((t) => t.id).toList();
+    } else if (session.tagName != null && session.tagName!.trim().isNotEmpty) {
+      final name = session.tagName!.trim();
+      final existingIndex = catalog.indexWhere(
+        (t) => t.name.trim().toLowerCase() == name.toLowerCase(),
+      );
+      if (existingIndex >= 0) {
+        resolvedTags.add(catalog[existingIndex]);
+      } else {
+        final newTag = TrackerTag(
+          id: session.tagId ?? 'tag_${DateTime.now().millisecondsSinceEpoch}',
+          name: name,
+          icon: session.tagIcon ?? '⏱️',
+          colorHex: session.tagColorHex ?? '#00F0FF',
+        );
+        catalog.add(newTag);
+        resolvedTags.add(newTag);
+        catalogUpdated = true;
+      }
     }
+
+    if (catalogUpdated) {
+      Prefs.trackerTags = catalog;
+    }
+    Prefs.lastTimerTagIds = resolvedTags.map((t) => t.id).toList();
+
+    // 2. Resolve and adopt Active Task
+    final remoteTask = session.task;
+    Prefs.activeTask = remoteTask;
+    Prefs.clearSessionSyncState();
 
     emit(
       state.copyWith(
@@ -281,11 +311,17 @@ class TimerCubit extends Cubit<TimerState> {
         duration: () => newDuration,
         lap: () => lap,
         lapNumber: () => lapNumber,
-        activeTags: () => tags,
+        activeTags: () => resolvedTags,
+        activeTask: () => remoteTask,
+        activeLogPageId: () => null,
       ),
     );
 
     _beginTagSegment();
+
+    if (remoteTask != null && lap == TimerLap.work) {
+      _checkAndMoveActiveTaskToInProgress();
+    }
   }
 
   /// Toggle an activity tag used for hourly credit.

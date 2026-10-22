@@ -85,5 +85,46 @@ void main() {
       expect(decremented.remainingSeconds, equals(1233));
       expect(decremented.formattedRemaining, equals('20:33'));
     });
+
+    test('reconstructs NotionTask and multiple tags from payload', () {
+      final json = {
+        'deviceId': 'dev_test_task',
+        'deviceName': 'macOS',
+        'status': 'running',
+        'lap': 'work',
+        'lapNumber': 1,
+        'remainingSeconds': 1200,
+        'totalSeconds': 1500,
+        'taskId': 'task_notion_99',
+        'taskTitle': 'Fix Takeover Bug',
+        'taskJson': '{"id":"task_notion_99","title":"Fix Takeover Bug",'
+            '"status":"In Progress","projectTitle":"Pomo"}',
+        'tags': [
+          {
+            'id': 'tag_1',
+            'name': 'System Building',
+            'icon': '⏰',
+            'colorHex': '#00F0FF',
+          },
+          {
+            'id': 'tag_2',
+            'name': 'Deep Focus',
+            'icon': '🧠',
+            'colorHex': '#A855F7',
+          },
+        ],
+        'updatedAt': '2026-10-22T14:40:00.000Z',
+      };
+
+      final session = RemoteSession.fromJson(json);
+      expect(session.task, isNotNull);
+      expect(session.task!.id, equals('task_notion_99'));
+      expect(session.task!.title, equals('Fix Takeover Bug'));
+      expect(session.task!.status, equals('In Progress'));
+      expect(session.task!.projectTitle, equals('Pomo'));
+      expect(session.tags.length, equals(2));
+      expect(session.tags[0].name, equals('System Building'));
+      expect(session.tags[1].name, equals('Deep Focus'));
+    });
   });
 }
