@@ -1,0 +1,40 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Scaled to 1.15 so that with Android's 16% launcher inset, the core fills the 72dp safe zone (~62dp) -->
+  <g transform="translate(512 512) scale(1.15) translate(-512 -512)">
+    <!-- 24-Hour Timeline Outer Calibration Dial -->
+    <circle cx="512" cy="512" r="380" stroke="#FFFFFF" stroke-width="4" stroke-opacity="0.3" stroke-dasharray="6 14"/>
+
+    <!-- Track Ring -->
+    <circle cx="512" cy="512" r="320" stroke="#FFFFFF" stroke-width="24" stroke-opacity="0.2" stroke-linecap="round"/>
+
+    <!-- Primary Active Focus & Progress Arc (270 degrees sweep) -->
+    <path d="M 512 192 A 320 320 0 1 1 192 512" 
+          stroke="#FFFFFF" 
+          stroke-width="38" 
+          stroke-linecap="round"/>
+
+    <!-- Precision Lap Markers -->
+    <line x1="512" y1="130" x2="512" y2="160" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+    <line x1="864" y1="512" x2="894" y2="512" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+    <line x1="512" y1="864" x2="512" y2="894" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- Center Focal Chrono-Diamond -->
+    <polygon points="512,308 676,512 512,716 348,512" 
+             fill="none" 
+             stroke="#FFFFFF" 
+             stroke-width="10" 
+             stroke-linejoin="round"/>
+
+    <!-- Inner Core Diamond -->
+    <polygon points="512,352 640,512 512,672 384,512" 
+             fill="#FFFFFF" 
+             stroke="#FFFFFF" 
+             stroke-width="2" 
+             stroke-linejoin="round" 
+             opacity="0.85"/>
+
+    <!-- Center Time Nexus Dot -->
+    <circle cx="512" cy="512" r="28" fill="#000000"/>
+    <circle cx="512" cy="512" r="14" fill="#FFFFFF"/>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 {
-  "versionCode": 13,
-  "versionName": "1.4.9",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.4.9/pomo-production.apk",
-  "changelog": "v1.4.9: Clean session takeover and reset handover between phone and macOS"
+  "versionCode": 14,
+  "versionName": "1.5.0",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.5.0/pomo-production.apk",
+  "changelog": "v1.5.0: New Android Material 3 adaptive icon with Rawshn brand identity (obsidian, electric cyan, and neon magenta)"
 }

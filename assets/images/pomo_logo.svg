@@ -1,32 +1,81 @@
-<svg width="4096" height="4096" viewBox="0 0 4096 4096" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_f_9_9)">
-<circle cx="2048" cy="2048" r="2000" fill="#201A1A"/>
-</g>
-<path d="M512 2048C512 2896.31 1199.69 3584 2048 3584C2896.31 3584 3584 2715 3584 2048C3584 1381 3082 455 2048 512" stroke="black"/>
-<g filter="url(#filter1_f_9_9)">
-<path d="M3584 2048C3584 2896.31 2896.31 3584 2048 3584C1199.69 3584 512 2896.31 512 2048C512 1199.69 1199.69 512 2048 512C2896.31 512 3584 1199.69 3584 2048Z" stroke="#5D3F3D" stroke-width="450"/>
-</g>
-<g clip-path="url(#clip0_9_9)" filter="url(#filter2_f_9_9)">
-<path d="M2730.67 1280H1365.33V2133.33C1365.33 2321.92 1518.08 2474.67 1706.67 2474.67H2218.67C2407.25 2474.67 2560 2321.92 2560 2133.33V1877.33H2730.67C2825.39 1877.33 2901.33 1800.53 2901.33 1706.67V1450.67C2901.33 1355.95 2825.39 1280 2730.67 1280ZM2730.67 1706.67H2560V1450.67H2730.67V1706.67ZM1365.33 2645.33H2730.67V2816H1365.33V2645.33Z" fill="#EDE0DE"/>
-</g>
-<defs>
-<filter id="filter0_f_9_9" x="18" y="18" width="4060" height="4060" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-<feGaussianBlur stdDeviation="15" result="effect1_foregroundBlur_9_9"/>
-</filter>
-<filter id="filter1_f_9_9" x="257" y="257" width="3582" height="3582" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-<feGaussianBlur stdDeviation="15" result="effect1_foregroundBlur_9_9"/>
-</filter>
-<filter id="filter2_f_9_9" x="994" y="994" width="2108" height="2108" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-<feGaussianBlur stdDeviation="15" result="effect1_foregroundBlur_9_9"/>
-</filter>
-<clipPath id="clip0_9_9">
-<rect width="2048" height="2048" fill="white" transform="translate(1024 1024)"/>
-</clipPath>
-</defs>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient: Brand Obsidian -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#141824"/>
+      <stop offset="60%" stop-color="#0A0C10"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </radialGradient>
+
+    <!-- Neon Arc Gradient: Cyan to Violet to Magenta -->
+    <linearGradient id="neonArc" x1="15%" y1="15%" x2="85%" y2="85%">
+      <stop offset="0%" stop-color="#00F0FF"/>
+      <stop offset="55%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#FF00AA"/>
+    </linearGradient>
+
+    <!-- Core Diamond Gradient -->
+    <linearGradient id="coreGrad" x1="30%" y1="20%" x2="70%" y2="80%">
+      <stop offset="0%" stop-color="#E0FFFF"/>
+      <stop offset="45%" stop-color="#00F0FF"/>
+      <stop offset="100%" stop-color="#7928CA"/>
+    </linearGradient>
+
+    <!-- Rim Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="subtleShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#00F0FF" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Canvas Base for Material App Icon -->
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#bgGrad)"/>
+  <rect x="32" y="32" width="960" height="960" rx="224" stroke="#223048" stroke-width="6" stroke-opacity="0.75"/>
+
+  <!-- 24-Hour Timeline Outer Calibration Dial -->
+  <circle cx="512" cy="512" r="380" stroke="#1A2234" stroke-width="4" stroke-dasharray="6 14"/>
+
+  <!-- Subtle Ambient Glow Behind Main Dial -->
+  <circle cx="512" cy="512" r="310" stroke="#00F0FF" stroke-width="2" stroke-opacity="0.15" filter="url(#glow)"/>
+
+  <!-- Secondary Inner Track Ring -->
+  <circle cx="512" cy="512" r="320" stroke="#161F2E" stroke-width="32" stroke-linecap="round"/>
+
+  <!-- Primary Active Focus & Progress Arc (270 degrees sweep) -->
+  <!-- Starts at -90deg (top: 512, 192), sweeps clockwise through right, bottom, to left (192, 512) -->
+  <path d="M 512 192 A 320 320 0 1 1 192 512" 
+        stroke="url(#neonArc)" 
+        stroke-width="38" 
+        stroke-linecap="round" 
+        filter="url(#subtleShadow)"/>
+
+  <!-- Precision Lap Markers (12, 3, 6 o'clock accent notches) -->
+  <line x1="512" y1="130" x2="512" y2="160" stroke="#00F0FF" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+  <line x1="864" y1="512" x2="894" y2="512" stroke="#A855F7" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+  <line x1="512" y1="864" x2="512" y2="894" stroke="#FF00AA" stroke-width="6" stroke-linecap="round" stroke-opacity="0.8"/>
+
+  <!-- Center Focal Chrono-Diamond: Precision Sovereignty Emblem -->
+  <!-- Outer Diamond Facet -->
+  <polygon points="512,308 676,512 512,716 348,512" 
+           fill="#0E121B" 
+           stroke="url(#neonArc)" 
+           stroke-width="8" 
+           stroke-linejoin="round"/>
+
+  <!-- Inner Radiant Core Diamond -->
+  <polygon points="512,352 640,512 512,672 384,512" 
+           fill="url(#coreGrad)" 
+           stroke="#FFFFFF" 
+           stroke-width="3" 
+           stroke-linejoin="round" 
+           opacity="0.95" 
+           filter="url(#glow)"/>
+
+  <!-- Center Time Nexus Dot -->
+  <circle cx="512" cy="512" r="28" fill="#FFFFFF"/>
+  <circle cx="512" cy="512" r="14" fill="#0A0C10"/>
 </svg>

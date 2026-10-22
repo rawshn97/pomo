@@ -3,12 +3,15 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/images/pomo_logo.png"
+  adaptive_icon_background: "#0A0C10"
+  adaptive_icon_foreground: "assets/images/pomo_adaptive_foreground.png"
+  adaptive_icon_monochrome: "assets/images/pomo_adaptive_monochrome.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
     image_path: "assets/images/pomo_logo.png"
-    background_color: "#hexcode"
-    theme_color: "#hexcode"
+    background_color: "#0A0C10"
+    theme_color: "#00F0FF"
   windows:
     generate: true
     image_path: "assets/images/pomo_logo.png"
