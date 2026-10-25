@@ -1,6 +1,12 @@
 name = "pomo-sync"
 main = "src/index.js"
 compatibility_date = "2024-10-01"
+workers_dev = true
+
+# Custom domain on Cloudflare zone rawshn.com (auto-provisions DNS + SSL)
+routes = [
+  { pattern = "sync.rawshn.com", custom_domain = true }
+]
 
 # Cloudflare Durable Objects binding for sub-20ms WebSocket fanout
 [durable_objects]
@@ -12,11 +18,5 @@ bindings = [
 tag = "v1"
 new_sqlite_classes = ["SyncRoom"]
 
-# Environment variables
 [vars]
 # FOCUS_ACCESS_TOKEN = "your-shared-access-token"
-
-# Custom domain on Cloudflare zone rawshn.com
-routes = [
-  { pattern = "sync.rawshn.com/*", zone_name = "rawshn.com" }
-]

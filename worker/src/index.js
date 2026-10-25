@@ -19,6 +19,25 @@ export class SyncRoom {
     this.state = state;
     this.env = env;
     this.session = null;
+    this.tvPairings = new Map();
+    this.paraRevision = 0;
+  }
+
+  prunePairings() {
+    const now = Date.now();
+    for (const [code, entry] of this.tvPairings.entries()) {
+      if (now - entry.createdAt > 5 * 60 * 1000) {
+        this.tvPairings.delete(code);
+      }
+    }
+  }
+
+  verifyParaSecret(request) {
+    const expected = this.env.PARA_SYNC_SECRET;
+    if (!expected) return true;
+    const authHeader = request.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    return token === expected;
   }
 
   async fetch(request) {
@@ -30,7 +49,9 @@ export class SyncRoom {
 
     // Authenticate if FOCUS_ACCESS_TOKEN is configured in environment
     const authHeader = request.headers.get("Authorization") || "";
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const headerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const queryToken = (url.searchParams.get("token") || "").trim();
+    const token = headerToken || queryToken;
     const expectedToken = this.env.FOCUS_ACCESS_TOKEN;
     if (expectedToken && token !== expectedToken) {
       return new Response(JSON.stringify({ error: "Unauthorized access code" }), {
@@ -84,6 +105,95 @@ export class SyncRoom {
       return this.handleSessionUpdate(body);
     }
 
+    // REST: POST /api/para/broadcast - sub-20ms cross-device PARA status invalidation
+    if (request.method === "POST" && url.pathname === "/api/para/broadcast") {
+      if (!this.verifyParaSecret(request)) {
+        return new Response(JSON.stringify({ error: "Unauthorized PARA sync secret" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      const body = await request.json().catch(() => ({}));
+      this.paraRevision += 1;
+      const event = {
+        type: "PARA_STATE_PATCH",
+        revision: this.paraRevision,
+        section: body.section || "all",
+        summary: body.summary || null,
+        ts: new Date().toISOString(),
+      };
+      this.broadcast(event);
+      return new Response(JSON.stringify({ success: true, revision: this.paraRevision }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // REST: POST /api/tv-pair/create - Smart TV 4-digit pairing code generation
+    if (request.method === "POST" && url.pathname === "/api/tv-pair/create") {
+      this.prunePairings();
+      let code = String(Math.floor(1000 + Math.random() * 9000));
+      for (let i = 0; i < 10 && this.tvPairings.has(code); i++) {
+        code = String(Math.floor(1000 + Math.random() * 9000));
+      }
+      const createdAt = Date.now();
+      this.tvPairings.set(code, { code, createdAt, approvedToken: null, approvedBy: null });
+      return new Response(
+        JSON.stringify({ code, expiresInSeconds: 300, expiresAt: new Date(createdAt + 300000).toISOString() }),
+        { headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // REST: GET /api/tv-pair/status?code=XXXX - Smart TV poll + consumption
+    if (request.method === "GET" && url.pathname === "/api/tv-pair/status") {
+      this.prunePairings();
+      const code = (url.searchParams.get("code") || "").trim();
+      const entry = this.tvPairings.get(code);
+      if (!entry) {
+        return new Response(JSON.stringify({ status: "expired" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      if (entry.approvedToken) {
+        const tok = entry.approvedToken;
+        this.tvPairings.delete(code);
+        return new Response(JSON.stringify({ status: "approved", tvToken: tok, approvedBy: entry.approvedBy }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      return new Response(JSON.stringify({ status: "pending" }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // REST: POST /api/tv-pair/approve - Authenticated phone approves Smart TV 4-digit code
+    if (request.method === "POST" && url.pathname === "/api/tv-pair/approve") {
+      if (!this.verifyParaSecret(request)) {
+        return new Response(JSON.stringify({ error: "Unauthorized PARA sync secret" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      this.prunePairings();
+      const body = await request.json().catch(() => ({}));
+      const code = String(body.code || "").trim();
+      const tvToken = String(body.tvToken || "").trim();
+      const approvedBy = String(body.approvedBy || "owner");
+      const entry = this.tvPairings.get(code);
+      if (!entry || !tvToken) {
+        return new Response(JSON.stringify({ error: "Invalid or expired 4-digit TV code" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      entry.approvedToken = tvToken;
+      entry.approvedBy = approvedBy;
+      this.broadcast({ type: "TV_PAIR_APPROVED", code });
+      return new Response(JSON.stringify({ success: true, code }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     // Health check
     if (url.pathname === "/health" || url.pathname === "/") {
       return new Response(
@@ -92,6 +202,7 @@ export class SyncRoom {
           service: "pomo-cloudflare-sync",
           connections: this.state.getWebSockets().length,
           hasActiveSession: !!(this.session && this.session.status !== "stopped"),
+          paraRevision: this.paraRevision,
         }),
         { headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
