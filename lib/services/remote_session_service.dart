@@ -175,10 +175,39 @@ class RemoteSessionService {
     }
   }
 
+  @visibleForTesting
+  void handleWsMessageForTesting(dynamic message) => _handleWsMessage(message);
+
   void _handleWsMessage(dynamic message) {
     try {
       final data = jsonDecode(message as String) as Map<String, dynamic>;
       final type = data['type'] as String?;
+
+      if (type == 'SESSION_COMMAND') {
+        final command = data['command'] as String?;
+        final targetDeviceId = data['targetDeviceId'] as String?;
+        if (targetDeviceId == null ||
+            targetDeviceId.isEmpty ||
+            targetDeviceId == Prefs.deviceId) {
+          final localCubit = _timerCubit;
+          if (localCubit != null) {
+            if (command == 'stop') {
+              _broadcastTimer?.cancel();
+              _broadcastTimer = null;
+              localCubit.reset();
+              remoteSessionNotifier.value = null;
+            } else if (command == 'pause') {
+              _broadcastTimer?.cancel();
+              _broadcastTimer = null;
+              localCubit.stop();
+            } else if (command == 'resume') {
+              localCubit.start();
+            }
+          }
+        }
+        return;
+      }
+
       if (type == 'SESSION_UPDATE' && data['session'] != null) {
         final session = RemoteSession.fromJson(
           data['session'] as Map<String, dynamic>,

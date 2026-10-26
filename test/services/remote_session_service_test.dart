@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pomo/models/remote_session.dart';
 import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
@@ -102,6 +103,48 @@ void main() {
         ..clearDisplacedFlag();
 
       expect(service.wasDisplacedByRemote, isFalse);
+
+      cubit.close();
+    });
+
+    test('SESSION_COMMAND handles remote stop, pause, and resume commands', () {
+      final cubit = TimerCubit();
+      final service = RemoteSessionService()..attachTimerCubit(cubit);
+
+      // 1. Start timer locally
+      cubit.start();
+      expect(cubit.state.status, equals(TimerStatus.running));
+
+      // 2. Receive remote pause command
+      service.handleWsMessageForTesting(
+        jsonEncode({
+          'type': 'SESSION_COMMAND',
+          'command': 'pause',
+          'targetDeviceId': null,
+        }),
+      );
+      expect(cubit.state.status, equals(TimerStatus.stopped));
+
+      // 3. Receive remote resume command
+      service.handleWsMessageForTesting(
+        jsonEncode({
+          'type': 'SESSION_COMMAND',
+          'command': 'resume',
+          'targetDeviceId': null,
+        }),
+      );
+      expect(cubit.state.status, equals(TimerStatus.running));
+
+      // 4. Receive remote stop command
+      service.handleWsMessageForTesting(
+        jsonEncode({
+          'type': 'SESSION_COMMAND',
+          'command': 'stop',
+          'targetDeviceId': null,
+        }),
+      );
+      expect(cubit.state.status, equals(TimerStatus.stopped));
+      expect(cubit.state.duration, equals(Duration.zero));
 
       cubit.close();
     });

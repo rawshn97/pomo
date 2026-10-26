@@ -212,24 +212,45 @@ export class SyncRoom {
   }
 
   handleSessionUpdate(body) {
+    const isController =
+      body.isController === true ||
+      body.force === true ||
+      body.deviceId === "para-status-web";
+
     if (body.status === "stopped") {
       // Displaced devices sending a stale stopped update must not clear
-      // another device's active session.
-      if (this.session && body.deviceId && this.session.deviceId !== body.deviceId) {
+      // another device's active session, unless this is an explicit controller command.
+      if (
+        !isController &&
+        this.session &&
+        body.deviceId &&
+        this.session.deviceId !== body.deviceId
+      ) {
         return new Response(JSON.stringify({ success: true, ignored: true }), {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
+
+      const targetDeviceId = this.session?.deviceId || body.deviceId || null;
       this.session = null;
       this.broadcast({ type: "SESSION_IDLE" });
+      this.broadcast({
+        type: "SESSION_COMMAND",
+        command: "stop",
+        targetDeviceId: targetDeviceId,
+        by: body.deviceName || body.deviceId || "controller",
+      });
+
       return new Response(JSON.stringify({ success: true, active: false }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
     if (body.status === "paused") {
-      // If another device is actively running, ignore paused reports from displaced devices.
+      // If another device is actively running, ignore paused reports from displaced devices,
+      // unless this is an explicit controller command.
       if (
+        !isController &&
         this.session &&
         body.deviceId &&
         this.session.deviceId !== body.deviceId &&
@@ -239,7 +260,36 @@ export class SyncRoom {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
+
+      if (this.session) {
+        const live = this.calculateLiveSession();
+        this.session.status = "paused";
+        this.session.remainingSeconds = live.remainingSeconds;
+        this.session.endsAt = null;
+        this.session.updatedAt = new Date().toISOString();
+
+        const pausedLive = {
+          ...this.session,
+          liveRemaining: this.session.remainingSeconds,
+          remainingSeconds: this.session.remainingSeconds,
+          isRunning: false,
+        };
+        this.broadcast({ type: "SESSION_UPDATE", session: pausedLive });
+        this.broadcast({
+          type: "SESSION_COMMAND",
+          command: "pause",
+          targetDeviceId: this.session.deviceId,
+          by: body.deviceName || body.deviceId || "controller",
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, session: pausedLive }),
+          { headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
     }
+
+    const wasPaused = this.session && this.session.status === "paused";
 
     const now = new Date();
     const remainingSecs =
@@ -287,16 +337,61 @@ export class SyncRoom {
       if (data.type === "BROADCAST_SESSION" && data.payload) {
         this.handleSessionUpdate(data.payload);
       }
-      if (data.type === "STOP_SESSION") {
-        if (
-          this.session &&
-          data.deviceId &&
-          this.session.deviceId !== data.deviceId
-        ) {
-          return;
+      if (data.type === "SESSION_COMMAND") {
+        if (data.command === "stop") {
+          const target = this.session?.deviceId || data.targetDeviceId || null;
+          this.session = null;
+          this.broadcast({ type: "SESSION_IDLE" });
+          this.broadcast({
+            type: "SESSION_COMMAND",
+            command: "stop",
+            targetDeviceId: target,
+          });
+        } else if (data.command === "pause") {
+          if (this.session) {
+            const live = this.calculateLiveSession();
+            this.session.status = "paused";
+            this.session.remainingSeconds = live.remainingSeconds;
+            this.session.endsAt = null;
+            const pausedLive = {
+              ...this.session,
+              liveRemaining: this.session.remainingSeconds,
+              remainingSeconds: this.session.remainingSeconds,
+              isRunning: false,
+            };
+            this.broadcast({ type: "SESSION_UPDATE", session: pausedLive });
+            this.broadcast({
+              type: "SESSION_COMMAND",
+              command: "pause",
+              targetDeviceId: this.session.deviceId,
+            });
+          }
+        } else if (data.command === "resume") {
+          if (this.session) {
+            this.session.status = "running";
+            this.session.endsAt = new Date(
+              Date.now() + (this.session.remainingSeconds || 1500) * 1000
+            ).toISOString();
+            const live = this.calculateLiveSession();
+            this.broadcast({ type: "SESSION_UPDATE", session: live });
+            this.broadcast({
+              type: "SESSION_COMMAND",
+              command: "resume",
+              targetDeviceId: this.session.deviceId,
+            });
+          }
         }
+        return;
+      }
+      if (data.type === "STOP_SESSION") {
+        const target = this.session?.deviceId || data.deviceId || null;
         this.session = null;
-        this.broadcast({ type: "SESSION_IDLE" }, ws);
+        this.broadcast({ type: "SESSION_IDLE" });
+        this.broadcast({
+          type: "SESSION_COMMAND",
+          command: "stop",
+          targetDeviceId: target,
+        });
       }
     } catch (_) {}
   }
