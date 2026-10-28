@@ -140,7 +140,7 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
-                  RemoteSessionService().clearDisplacedFlag();
+                  RemoteSessionService().beginLocalTakeover();
                   context.read<TimerCubit>().adoptRemoteSession(remoteSession);
                 },
                 borderRadius: BorderRadius.circular(8),

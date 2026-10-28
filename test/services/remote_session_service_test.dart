@@ -148,5 +148,59 @@ void main() {
 
       cubit.close();
     });
+
+    test('beginLocalTakeover clears stale remote presence and ignores stale '
+        'frames during grace', () {
+      final service = RemoteSessionService();
+      final stale = jsonEncode({
+        'type': 'SESSION_UPDATE',
+        'session': {
+          'deviceId': 'para-status-web',
+          'deviceName': 'rawshn.com/status',
+          'status': 'running',
+          'remainingSeconds': 600,
+          'totalSeconds': 1500,
+        },
+      });
+
+      service.handleWsMessageForTesting(stale);
+      expect(service.remoteSessionNotifier.value, isNotNull);
+
+      service.beginLocalTakeover();
+      expect(service.remoteSessionNotifier.value, isNull);
+      expect(service.wasDisplacedByRemote, isFalse);
+
+      // A late frame from the old device must not resurrect the banner.
+      service.handleWsMessageForTesting(stale);
+      expect(service.remoteSessionNotifier.value, isNull);
+    });
+
+    test('own SESSION_UPDATE echo clears remote presence', () {
+      final service = RemoteSessionService();
+      service.remoteSessionNotifier.value = RemoteSession(
+        deviceId: 'other',
+        deviceName: 'Web',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 300,
+        totalSeconds: 1500,
+        updatedAt: DateTime.now(),
+      );
+
+      service.handleWsMessageForTesting(
+        jsonEncode({
+          'type': 'SESSION_UPDATE',
+          'session': {
+            'deviceId': Prefs.deviceId,
+            'deviceName': 'Mobile',
+            'status': 'running',
+            'remainingSeconds': 300,
+            'totalSeconds': 1500,
+          },
+        }),
+      );
+      expect(service.remoteSessionNotifier.value, isNull);
+    });
   });
 }

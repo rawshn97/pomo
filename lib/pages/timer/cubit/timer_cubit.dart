@@ -244,10 +244,17 @@ class TimerCubit extends Cubit<TimerState> {
       (l) => l.name == session.lap,
       orElse: () => TimerLap.work,
     );
-    final elapsedSecs = (session.totalSeconds - session.remainingSeconds).clamp(
-      0,
-      session.totalSeconds,
-    );
+    // Align elapsed time with THIS device's lap length so the countdown shows
+    // exactly the remaining time of the remote session (seamless handoff),
+    // even when the remote lap length differs from local settings.
+    final localLapSeconds = switch (lap) {
+          TimerLap.work => Prefs.workMinutes,
+          TimerLap.shortBreak => Prefs.shortBreakMinutes,
+          TimerLap.longBreak => Prefs.longBreakMinutes,
+        } *
+        60;
+    final elapsedSecs =
+        (localLapSeconds - session.remainingSeconds).clamp(0, 1 << 30);
     final newDuration = Duration(seconds: elapsedSecs);
     Prefs.duration = newDuration;
     Prefs.timerLap = lap;

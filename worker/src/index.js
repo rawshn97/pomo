@@ -21,6 +21,38 @@ export class SyncRoom {
     this.session = null;
     this.tvPairings = new Map();
     this.paraRevision = 0;
+    // Durable Objects can be evicted from memory when idle (WebSocket
+    // hibernation). Restore the active session so it never "disappears".
+    this.state.blockConcurrencyWhile(async () => {
+      try {
+        const stored = await this.state.storage.get("session");
+        if (stored && stored.status !== "stopped") {
+          this.session = stored;
+        }
+      } catch (_) {}
+    });
+  }
+
+  persistSession() {
+    try {
+      if (this.session) {
+        this.state.storage.put("session", this.session);
+      } else {
+        this.state.storage.delete("session");
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * A stop request only clears the active session when it comes from the
+   * device that owns it, or from an explicit controller (PARA status page).
+   * Idle devices must never wipe another device's timer.
+   */
+  canStopSession(deviceId, isController) {
+    if (isController) return true;
+    if (!this.session) return true;
+    if (!deviceId) return false;
+    return this.session.deviceId === deviceId;
   }
 
   prunePairings() {
@@ -233,6 +265,7 @@ export class SyncRoom {
 
       const targetDeviceId = this.session?.deviceId || body.deviceId || null;
       this.session = null;
+      this.persistSession();
       this.broadcast({ type: "SESSION_IDLE" });
       this.broadcast({
         type: "SESSION_COMMAND",
@@ -267,6 +300,7 @@ export class SyncRoom {
         this.session.remainingSeconds = live.remainingSeconds;
         this.session.endsAt = null;
         this.session.updatedAt = new Date().toISOString();
+        this.persistSession();
 
         const pausedLive = {
           ...this.session,
@@ -318,6 +352,7 @@ export class SyncRoom {
       updatedAt: now.toISOString(),
       endsAt: endsAt,
     };
+    this.persistSession();
 
     const live = this.calculateLiveSession();
     this.broadcast({ type: "SESSION_UPDATE", session: live });
@@ -341,6 +376,7 @@ export class SyncRoom {
         if (data.command === "stop") {
           const target = this.session?.deviceId || data.targetDeviceId || null;
           this.session = null;
+          this.persistSession();
           this.broadcast({ type: "SESSION_IDLE" });
           this.broadcast({
             type: "SESSION_COMMAND",
@@ -353,6 +389,7 @@ export class SyncRoom {
             this.session.status = "paused";
             this.session.remainingSeconds = live.remainingSeconds;
             this.session.endsAt = null;
+            this.persistSession();
             const pausedLive = {
               ...this.session,
               liveRemaining: this.session.remainingSeconds,
@@ -372,6 +409,7 @@ export class SyncRoom {
             this.session.endsAt = new Date(
               Date.now() + (this.session.remainingSeconds || 1500) * 1000
             ).toISOString();
+            this.persistSession();
             const live = this.calculateLiveSession();
             this.broadcast({ type: "SESSION_UPDATE", session: live });
             this.broadcast({
@@ -384,8 +422,14 @@ export class SyncRoom {
         return;
       }
       if (data.type === "STOP_SESSION") {
+        // Ignore stop requests from devices that do not own the session
+        // (e.g. an idle app resetting its own tags/task on startup).
+        if (!this.canStopSession(data.deviceId, data.isController === true)) {
+          return;
+        }
         const target = this.session?.deviceId || data.deviceId || null;
         this.session = null;
+        this.persistSession();
         this.broadcast({ type: "SESSION_IDLE" });
         this.broadcast({
           type: "SESSION_COMMAND",

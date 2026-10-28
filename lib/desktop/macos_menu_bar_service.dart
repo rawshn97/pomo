@@ -332,7 +332,7 @@ class MacosMenuBarService {
       case 'takeover':
         final remote = RemoteSessionService().remoteSessionNotifier.value;
         if (remote != null && remote.isRunning) {
-          RemoteSessionService().clearDisplacedFlag();
+          RemoteSessionService().beginLocalTakeover();
           timerCubit.adoptRemoteSession(remote);
         }
       case 'toggle':

@@ -33,6 +33,35 @@ class RemoteSessionService {
   TimerCubit? _timerCubit;
   bool _wasDisplacedByRemote = false;
 
+  /// Whether this device currently owns (broadcasts) the shared session.
+  /// Only the owner may report a stop; idle devices must never clear a
+  /// session that belongs to another device.
+  bool _ownsSession = false;
+
+  /// While set in the future, stale sessions from other devices are ignored
+  /// so an in-flight poll/WS frame cannot undo a just-completed takeover.
+  DateTime? _takeoverGraceUntil;
+
+  static const Duration _takeoverGrace = Duration(seconds: 5);
+
+  bool get _inTakeoverGrace {
+    final until = _takeoverGraceUntil;
+    return until != null && DateTime.now().isBefore(until);
+  }
+
+  /// Called right before this device adopts a remote session (Take Over).
+  /// Clears the stale remote presence synchronously so the 1s remote tick and
+  /// polling cannot reset the freshly adopted local timer.
+  void beginLocalTakeover() {
+    _wasDisplacedByRemote = false;
+    _takeoverGraceUntil = DateTime.now().add(_takeoverGrace);
+    _stopRemoteTick();
+    remoteSessionNotifier.value = null;
+    if (!kIsWeb && Platform.isAndroid) {
+      unawaited(AndroidNotificationService().stopForeground());
+    }
+  }
+
   /// Holds the current active session reported by a remote device, if any.
   final ValueNotifier<RemoteSession?> remoteSessionNotifier =
       ValueNotifier<RemoteSession?>(null);
@@ -158,6 +187,7 @@ class RemoteSessionService {
     // to stop the remote session!
     _broadcastTimer?.cancel();
     _broadcastTimer = null;
+    _ownsSession = false;
 
     // 2. If local timer is running or has partial duration, reset it.
     final localCubit = _timerCubit;
@@ -213,21 +243,11 @@ class RemoteSessionService {
           data['session'] as Map<String, dynamic>,
         );
         if (session.deviceId != Prefs.deviceId) {
-          remoteSessionNotifier.value = session;
-          if (session.isRunning) {
-            _handleDisplacedByRemote(session);
-            _startRemoteTick(session);
-            if (!kIsWeb && Platform.isAndroid) {
-              _syncAndroidNotification(session);
-            }
-          } else {
-            _stopRemoteTick();
-            if (!kIsWeb && Platform.isAndroid) {
-              unawaited(AndroidNotificationService().stopForeground());
-            }
-          }
+          _applyRemoteSession(session);
           return;
         }
+        // Our own broadcast echoed back: any previous remote presence is stale.
+        _clearRemotePresence();
       } else if (type == 'SESSION_IDLE') {
         _stopRemoteTick();
         if (!kIsWeb &&
@@ -278,27 +298,19 @@ class RemoteSessionService {
       );
 
       final data = response.data;
-      if (data != null && data['active'] == true && data['session'] != null) {
+      // A paused remote session reports `active: false` but must stay visible.
+      if (data != null && data['session'] != null) {
         final session = RemoteSession.fromJson(
           data['session'] as Map<String, dynamic>,
         );
         // Ignore sessions originating from this exact device
         if (session.deviceId != Prefs.deviceId) {
-          remoteSessionNotifier.value = session;
-          if (session.isRunning) {
-            _handleDisplacedByRemote(session);
-            _startRemoteTick(session);
-            if (!kIsWeb && Platform.isAndroid) {
-              _syncAndroidNotification(session);
-            }
-          } else {
-            _stopRemoteTick();
-            if (!kIsWeb && Platform.isAndroid) {
-              unawaited(AndroidNotificationService().stopForeground());
-            }
-          }
+          _applyRemoteSession(session);
           return;
         }
+      }
+      if (_inTakeoverGrace) {
+        return;
       }
       _stopRemoteTick();
       if (!kIsWeb &&
@@ -310,6 +322,33 @@ class RemoteSessionService {
     } catch (e) {
       // Non-blocking presence probe failure
       Logger().d('RemoteSessionService fetch failed: $e');
+    }
+  }
+
+  void _applyRemoteSession(RemoteSession session) {
+    if (_inTakeoverGrace) {
+      // A takeover just happened locally; this frame is likely stale.
+      return;
+    }
+    remoteSessionNotifier.value = session;
+    if (session.isRunning) {
+      _handleDisplacedByRemote(session);
+      _startRemoteTick(session);
+      if (!kIsWeb && Platform.isAndroid) {
+        _syncAndroidNotification(session);
+      }
+    } else {
+      _stopRemoteTick();
+      if (!kIsWeb && Platform.isAndroid) {
+        unawaited(AndroidNotificationService().stopForeground());
+      }
+    }
+  }
+
+  void _clearRemotePresence() {
+    _stopRemoteTick();
+    if (remoteSessionNotifier.value != null) {
+      remoteSessionNotifier.value = null;
     }
   }
 
@@ -396,6 +435,8 @@ class RemoteSessionService {
     required SettingsState settingsState,
   }) async {
     final apiKey = Prefs.notionApiKey;
+    _ownsSession = timerState.status == TimerStatus.running ||
+        timerState.duration > Duration.zero;
 
     final lapMins = timerState.lap == TimerLap.work
         ? settingsState.workMinutes
@@ -462,6 +503,11 @@ class RemoteSessionService {
 
   /// Reports that the local session has ended or stopped.
   Future<void> reportStopped() async {
+    // Never tell the relay to stop a session this device does not own.
+    if (!_ownsSession) {
+      return;
+    }
+    _ownsSession = false;
     final apiKey = Prefs.notionApiKey;
 
     // Push immediately over WebSocket if connected (<20ms edge broadcast)

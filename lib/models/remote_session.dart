@@ -144,7 +144,7 @@ class RemoteSession extends Equatable {
   final List<TrackerTag> tags;
   final DateTime updatedAt;
 
-  bool get isRunning => status == 'running';
+  bool get isRunning => status == 'running' && remainingSeconds > 0;
 
   /// Reconstructs the active [NotionTask] from the remote payload.
   NotionTask? get task {
