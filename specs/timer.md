@@ -56,7 +56,7 @@ Equal split across selected tags (`TimerTagCreditHelper.splitEqually`; first tag
 
 Duplicate tag names are blocked in `TagCreateDialog`. Built-in tags cannot be deleted.
 
-Task list: `NotionTasksCubit` + `query` of the Tasks database (`notionDatabaseId`). Projects/areas used on the **hourly** dialog are a separate query (`queryProjectsAndAreas`).
+Task list: `NotionTasksCubit` queries Tasks (`notionDatabaseId`) and active projects via `queryActiveProjects` (`notionProjectsDatabaseId`). Areas, resources, and archived items are excluded from task selection.
 
 ## Sounds and webhooks
 

@@ -164,15 +164,15 @@ class _TabSelector extends StatelessWidget {
           icon: Icon(Icons.list, size: isCompact ? 16 : 18),
         ),
         ButtonSegment<String>(
-          value: 'para',
+          value: 'projects',
           label: const FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text('Areas & Projects'),
+            child: Text('Active Projects'),
           ),
-          icon: Icon(Icons.account_tree_outlined, size: isCompact ? 16 : 18),
+          icon: Icon(Icons.folder_outlined, size: isCompact ? 16 : 18),
         ),
       ],
-      selected: {activeTab},
+      selected: {activeTab == 'para' ? 'projects' : activeTab},
       onSelectionChanged: (selected) {
         if (selected.isNotEmpty) {
           context.read<NotionTasksCubit>().setTab(selected.first);
@@ -303,13 +303,9 @@ class _TaskTile extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              task.priority == 'Area'
-                                  ? '🏔️ Area'
-                                  : task.priority == 'Resource'
-                                      ? '📚 Resource'
-                                      : task.priority == 'Project'
-                                          ? '📁 Project'
-                                          : task.priority,
+                              task.priority == 'Project'
+                                  ? '📁 Project'
+                                  : task.priority,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.onTertiaryContainer,
                                 fontWeight: FontWeight.w600,

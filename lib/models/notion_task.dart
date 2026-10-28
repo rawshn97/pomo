@@ -60,21 +60,11 @@ class NotionTask extends Equatable {
       status = (statusProp['status'] as Map)['name'] as String? ?? status;
     }
 
-    // Priority or Type (Area/Resource)
+    // Priority or Project marker
     var priority = '';
     final prioProp = props['Priority'] as Map<String, dynamic>?;
     if (prioProp != null && prioProp['select'] is Map) {
       priority = (prioProp['select'] as Map)['name'] as String? ?? '';
-    }
-    final typeProp = props['Type'] as Map<String, dynamic>?;
-    if (typeProp != null) {
-      final typeMap = (typeProp['status'] ?? typeProp['select']) as Map?;
-      if (typeMap != null) {
-        final typeName = typeMap['name'] as String?;
-        if (typeName != null && typeName.isNotEmpty) {
-          priority = typeName; // 'Area' or 'Resource'
-        }
-      }
     }
     if (priority.isEmpty && statusProp != null) {
       priority = 'Project';

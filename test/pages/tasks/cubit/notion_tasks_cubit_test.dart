@@ -94,7 +94,7 @@ void main() {
     );
 
     blocTest<NotionTasksCubit, NotionTasksState>(
-      'search updates searchQuery and calls searchTasks',
+      'search updates searchQuery and calls searchTasks when on task tabs',
       build: () {
         when(() => mockNotionService.searchTasks(query: 'PARA'))
             .thenAnswer((_) async => [testTask]);
@@ -115,6 +115,67 @@ void main() {
       ],
       verify: (_) {
         verify(() => mockNotionService.searchTasks(query: 'PARA')).called(1);
+      },
+    );
+
+    blocTest<NotionTasksCubit, NotionTasksState>(
+      'setTab updates activeTab to projects and calls queryActiveProjects',
+      build: () {
+        when(() => mockNotionService.queryActiveProjects(searchKeyword: null))
+            .thenAnswer((_) async => [testTask]);
+        return NotionTasksCubit(notionService: mockNotionService);
+      },
+      act: (cubit) => cubit.setTab('projects'),
+      expect: () => [
+        const NotionTasksState(activeTab: 'projects'),
+        const NotionTasksState(
+          activeTab: 'projects',
+          status: NotionTasksStatus.loading,
+        ),
+        const NotionTasksState(
+          activeTab: 'projects',
+          status: NotionTasksStatus.success,
+          tasks: [testTask],
+        ),
+      ],
+      verify: (_) {
+        verify(
+          () => mockNotionService.queryActiveProjects(searchKeyword: null),
+        ).called(1);
+      },
+    );
+
+    blocTest<NotionTasksCubit, NotionTasksState>(
+      'search on projects tab queries active projects with search keyword',
+      build: () {
+        when(
+          () => mockNotionService.queryActiveProjects(searchKeyword: 'Pomo'),
+        ).thenAnswer((_) async => [testTask]);
+        return NotionTasksCubit(notionService: mockNotionService);
+      },
+      seed: () => const NotionTasksState(activeTab: 'projects'),
+      act: (cubit) => cubit.search('Pomo'),
+      expect: () => [
+        const NotionTasksState(
+          activeTab: 'projects',
+          searchQuery: 'Pomo',
+        ),
+        const NotionTasksState(
+          activeTab: 'projects',
+          searchQuery: 'Pomo',
+          status: NotionTasksStatus.loading,
+        ),
+        const NotionTasksState(
+          activeTab: 'projects',
+          searchQuery: 'Pomo',
+          status: NotionTasksStatus.success,
+          tasks: [testTask],
+        ),
+      ],
+      verify: (_) {
+        verify(
+          () => mockNotionService.queryActiveProjects(searchKeyword: 'Pomo'),
+        ).called(1);
       },
     );
   });

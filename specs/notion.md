@@ -47,7 +47,7 @@ Tags are **not** a separate Notion database. They are rows in Hourly Timeline wi
 
 ## Tasks and projects
 
-`NotionService` queries tasks for the modal; `queryProjectsAndAreas` for the hourly dialog. Status patch to In Progress when a To Do task starts on the timer.
+`NotionService` queries tasks for the modal and `queryActiveProjects` for active projects. Task selection modal restricts selection strictly to tasks or active projects (filtering out archived items, areas, and resources). Status patch to In Progress when a To Do task starts on the timer.
 
 ## Web vs desktop
 
@@ -57,4 +57,5 @@ Web typically needs `notionProxyUrl` (see [web.md](web.md) and `deploy/` API). D
 
 | Date | Change |
 |------|--------|
+| 2026-10-29 | Simplified task selector to tasks and active projects only; dropped areas and resources |
 | 2026-09-03 | Initial shipped Notion spec |

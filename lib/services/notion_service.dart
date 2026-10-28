@@ -226,9 +226,9 @@ class NotionService {
     }
   }
 
-  /// Queries Notion for PARA Projects, Areas, and Resources while skipping
-  /// archived (`Archive == true` or `Status == Done`) items and tasks.
-  Future<List<NotionTask>> queryProjectsAndAreas({
+  /// Queries Notion for active PARA Projects while skipping
+  /// archived (`Archive == true` or `Status == Done` / `Archived`) items.
+  Future<List<NotionTask>> queryActiveProjects({
     String? searchKeyword,
   }) async {
     final apiKey = Prefs.notionApiKey;
@@ -237,47 +237,56 @@ class NotionService {
     }
 
     final projectsDbId = Prefs.notionProjectsDatabaseId;
-    final areasDbId = Prefs.notionAreasDatabaseId;
+    if (projectsDbId.isEmpty) {
+      return [];
+    }
 
     final results = <NotionTask>[];
 
-    Future<void> fetchFromDb(String dbId) async {
-      try {
-        final url = '${_getBaseUrl()}databases/$dbId/query';
-        final payload = <String, dynamic>{
-          'page_size': 100,
-        };
-        final response = await _dio.post<Map<String, dynamic>>(
-          url,
-          data: payload,
-          options: Options(headers: _getHeaders(apiKey)),
-        );
-        final rawList = response.data?['results'] as List? ?? [];
-        for (final item in rawList.whereType<Map<String, dynamic>>()) {
-          final parsed = NotionTask.fromNotionApi(item);
-          if (!parsed.isArchived) {
-            if (searchKeyword == null ||
-                searchKeyword.trim().isEmpty ||
-                parsed.title
-                    .toLowerCase()
-                    .contains(searchKeyword.trim().toLowerCase())) {
-              results.add(parsed);
-            }
+    try {
+      final url = '${_getBaseUrl()}databases/$projectsDbId/query';
+      final payload = <String, dynamic>{
+        'page_size': 100,
+      };
+      final response = await _dio.post<Map<String, dynamic>>(
+        url,
+        data: payload,
+        options: Options(headers: _getHeaders(apiKey)),
+      );
+      final rawList = response.data?['results'] as List? ?? [];
+      for (final item in rawList.whereType<Map<String, dynamic>>()) {
+        final parsed = NotionTask.fromNotionApi(item);
+        final statusLower = parsed.status.trim().toLowerCase();
+        final isDoneOrArchived = statusLower == 'done' ||
+            statusLower == 'archived' ||
+            statusLower == 'completed';
+        if (!parsed.isArchived && !isDoneOrArchived) {
+          if (searchKeyword == null ||
+              searchKeyword.trim().isEmpty ||
+              parsed.title
+                  .toLowerCase()
+                  .contains(searchKeyword.trim().toLowerCase())) {
+            results.add(
+              parsed.copyWith(
+                priority: () => 'Project',
+              ),
+            );
           }
         }
-      } catch (e) {
-        Logger().w('Notion queryProjectsAndAreas ($dbId) warning: $e');
       }
+    } catch (e) {
+      Logger().w('Notion queryActiveProjects ($projectsDbId) warning: $e');
     }
-
-    await Future.wait([
-      fetchFromDb(projectsDbId),
-      fetchFromDb(areasDbId),
-    ]);
 
     results.sort((a, b) => a.title.compareTo(b.title));
     return results;
   }
+
+  /// Backward-compatible alias for [queryActiveProjects].
+  Future<List<NotionTask>> queryProjectsAndAreas({
+    String? searchKeyword,
+  }) =>
+      queryActiveProjects(searchKeyword: searchKeyword);
 
   /// Resolves Project titles for a list of [NotionTask]s by fetching the title
   /// of any related `projectId` page from the Notion API if not already known.

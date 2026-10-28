@@ -35,12 +35,18 @@ class NotionTasksCubit extends Cubit<NotionTasksState> {
 
     try {
       List<NotionTask> tasks;
-      if (state.searchQuery.trim().isNotEmpty) {
+      final isProjectsTab =
+          state.activeTab == 'projects' || state.activeTab == 'para';
+      if (isProjectsTab) {
+        tasks = await _notionService.queryActiveProjects(
+          searchKeyword: state.searchQuery.trim().isNotEmpty
+              ? state.searchQuery.trim()
+              : null,
+        );
+      } else if (state.searchQuery.trim().isNotEmpty) {
         tasks = await _notionService.searchTasks(
           query: state.searchQuery.trim(),
         );
-      } else if (state.activeTab == 'para') {
-        tasks = await _notionService.queryProjectsAndAreas();
       } else if (state.activeTab == 'today') {
         tasks = await _notionService.getTasksDueToday();
       } else if (state.activeTab == 'week') {

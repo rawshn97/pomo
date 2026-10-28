@@ -1,6 +1,6 @@
 {
-  "versionCode": 16,
-  "versionName": "1.5.2",
-  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.5.2/pomo-production.apk",
-  "changelog": "v1.5.2: Persistent Durable Object sync, seamless 4-surface Take Over, sprint duration adoption, and zero-minute stub cleanup"
+  "versionCode": 17,
+  "versionName": "1.5.3",
+  "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.5.3/pomo-production.apk",
+  "changelog": "v1.5.3: Simplified task selection tab to tasks and active projects only"
 }
