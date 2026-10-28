@@ -2,5 +2,5 @@
   "versionCode": 18,
   "versionName": "1.5.4",
   "apkUrl": "https://github.com/rawshn97/pomo/releases/download/v1.5.4/pomo-production.apk",
-  "changelog": "v1.5.4: Simplified task selector to 2 clean tabs (Tasks and Active Projects) with full-width legible buttons"
+  "changelog": "v1.5.4: Simplified task selector to 2 clean full-width tabs Tasks and Active Projects"
 }
