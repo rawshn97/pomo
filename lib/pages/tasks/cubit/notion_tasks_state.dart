@@ -11,7 +11,7 @@ class NotionTasksState extends Equatable {
   const NotionTasksState({
     this.status = NotionTasksStatus.initial,
     this.tasks = const [],
-    this.activeTab = 'today',
+    this.activeTab = 'tasks',
     this.searchQuery = '',
     this.errorMessage,
   });

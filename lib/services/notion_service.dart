@@ -204,7 +204,7 @@ class NotionService {
       'filter': {
         'and': filters,
       },
-      'page_size': 30,
+      'page_size': 100,
     };
 
     try {
@@ -219,6 +219,14 @@ class NotionService {
           .whereType<Map<String, dynamic>>()
           .map(NotionTask.fromNotionApi)
           .toList();
+      parsed.sort((a, b) {
+        if (a.due != null && b.due != null) {
+          return a.due!.compareTo(b.due!);
+        }
+        if (a.due != null) return -1;
+        if (b.due != null) return 1;
+        return a.title.compareTo(b.title);
+      });
       return await resolveProjectTitles(parsed);
     } on DioException catch (e) {
       Logger().e('Notion queryTasks error: ${e.message}', error: e);

@@ -129,50 +129,24 @@ class _SearchBarState extends State<_SearchBar> {
 class _TabSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final activeTab = context.select((NotionTasksCubit c) => c.state.activeTab);
-    final isCompact = MediaQuery.of(context).size.width < 450;
+    final isProjects = activeTab == 'projects' || activeTab == 'para';
 
     return SegmentedButton<String>(
       showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 12),
-      ),
-      segments: [
+      segments: const [
         ButtonSegment<String>(
-          value: 'today',
-          label: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(l10n.dueToday),
-          ),
-          icon: Icon(Icons.today, size: isCompact ? 16 : 18),
-        ),
-        ButtonSegment<String>(
-          value: 'week',
-          label: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(l10n.dueThisWeek),
-          ),
-          icon: Icon(Icons.date_range, size: isCompact ? 16 : 18),
-        ),
-        ButtonSegment<String>(
-          value: 'all',
-          label: const FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text('All'),
-          ),
-          icon: Icon(Icons.list, size: isCompact ? 16 : 18),
+          value: 'tasks',
+          label: Text('Tasks'),
+          icon: Icon(Icons.check_circle_outline),
         ),
         ButtonSegment<String>(
           value: 'projects',
-          label: const FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text('Active Projects'),
-          ),
-          icon: Icon(Icons.folder_outlined, size: isCompact ? 16 : 18),
+          label: Text('Active Projects'),
+          icon: Icon(Icons.folder_outlined),
         ),
       ],
-      selected: {activeTab == 'para' ? 'projects' : activeTab},
+      selected: {isProjects ? 'projects' : 'tasks'},
       onSelectionChanged: (selected) {
         if (selected.isNotEmpty) {
           context.read<NotionTasksCubit>().setTab(selected.first);

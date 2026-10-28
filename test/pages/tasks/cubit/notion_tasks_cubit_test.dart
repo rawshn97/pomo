@@ -49,9 +49,9 @@ void main() {
     );
 
     blocTest<NotionTasksCubit, NotionTasksState>(
-      'fetchTasks calls getTasksDueToday when activeTab is today',
+      'fetchTasks calls searchTasks when activeTab is tasks',
       build: () {
-        when(() => mockNotionService.getTasksDueToday())
+        when(() => mockNotionService.searchTasks())
             .thenAnswer((_) async => [testTask]);
         return NotionTasksCubit(notionService: mockNotionService);
       },
@@ -64,57 +64,7 @@ void main() {
         ),
       ],
       verify: (_) {
-        verify(() => mockNotionService.getTasksDueToday()).called(1);
-      },
-    );
-
-    blocTest<NotionTasksCubit, NotionTasksState>(
-      'setTab updates activeTab, clears query, and fetches tasks',
-      build: () {
-        when(() => mockNotionService.getTasksDueThisWeek())
-            .thenAnswer((_) async => [testTask]);
-        return NotionTasksCubit(notionService: mockNotionService);
-      },
-      act: (cubit) => cubit.setTab('week'),
-      expect: () => [
-        const NotionTasksState(activeTab: 'week'),
-        const NotionTasksState(
-          activeTab: 'week',
-          status: NotionTasksStatus.loading,
-        ),
-        const NotionTasksState(
-          activeTab: 'week',
-          status: NotionTasksStatus.success,
-          tasks: [testTask],
-        ),
-      ],
-      verify: (_) {
-        verify(() => mockNotionService.getTasksDueThisWeek()).called(1);
-      },
-    );
-
-    blocTest<NotionTasksCubit, NotionTasksState>(
-      'search updates searchQuery and calls searchTasks when on task tabs',
-      build: () {
-        when(() => mockNotionService.searchTasks(query: 'PARA'))
-            .thenAnswer((_) async => [testTask]);
-        return NotionTasksCubit(notionService: mockNotionService);
-      },
-      act: (cubit) => cubit.search('PARA'),
-      expect: () => [
-        const NotionTasksState(searchQuery: 'PARA'),
-        const NotionTasksState(
-          searchQuery: 'PARA',
-          status: NotionTasksStatus.loading,
-        ),
-        const NotionTasksState(
-          searchQuery: 'PARA',
-          status: NotionTasksStatus.success,
-          tasks: [testTask],
-        ),
-      ],
-      verify: (_) {
-        verify(() => mockNotionService.searchTasks(query: 'PARA')).called(1);
+        verify(() => mockNotionService.searchTasks()).called(1);
       },
     );
 
@@ -142,6 +92,55 @@ void main() {
         verify(
           () => mockNotionService.queryActiveProjects(searchKeyword: null),
         ).called(1);
+      },
+    );
+
+    blocTest<NotionTasksCubit, NotionTasksState>(
+      'setTab updates activeTab to tasks, clears query, and fetches tasks',
+      build: () {
+        when(() => mockNotionService.searchTasks())
+            .thenAnswer((_) async => [testTask]);
+        return NotionTasksCubit(notionService: mockNotionService);
+      },
+      seed: () => const NotionTasksState(activeTab: 'projects'),
+      act: (cubit) => cubit.setTab('tasks'),
+      expect: () => [
+        const NotionTasksState(),
+        const NotionTasksState(
+          status: NotionTasksStatus.loading,
+        ),
+        const NotionTasksState(
+          status: NotionTasksStatus.success,
+          tasks: [testTask],
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockNotionService.searchTasks()).called(1);
+      },
+    );
+
+    blocTest<NotionTasksCubit, NotionTasksState>(
+      'search updates searchQuery and calls searchTasks when on task tabs',
+      build: () {
+        when(() => mockNotionService.searchTasks(query: 'PARA'))
+            .thenAnswer((_) async => [testTask]);
+        return NotionTasksCubit(notionService: mockNotionService);
+      },
+      act: (cubit) => cubit.search('PARA'),
+      expect: () => [
+        const NotionTasksState(searchQuery: 'PARA'),
+        const NotionTasksState(
+          searchQuery: 'PARA',
+          status: NotionTasksStatus.loading,
+        ),
+        const NotionTasksState(
+          searchQuery: 'PARA',
+          status: NotionTasksStatus.success,
+          tasks: [testTask],
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockNotionService.searchTasks(query: 'PARA')).called(1);
       },
     );
 
