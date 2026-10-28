@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-10-28
+
+### Added
+- Seamless cross-surface `Take Over` across macOS (app window + menu bar item), Android APK, Web PWA (`/focus`), and PARA Status (`/status`).
+- Sprint duration adoption (`15m`, `25m`, `50m`, or custom `1..60m`) during remote session takeover so adopted sprints preserve exact total and remaining time.
+- Automatic 25-second WebSocket `PING` keepalive and 3.5-second auto-reconnect in `RemoteSessionService`.
+
+### Fixed
+- Persisted active focus session in Cloudflare Durable Object transactional storage (`SyncRoom`) so WebSocket Hibernation (~10s idle eviction) never drops timers started from `/status` or remote surfaces.
+- Prevented post-takeover reset race (`beginLocalTakeover` grace window), stale 10-second heartbeat ownership clobbering (`isHeartbeat` check), non-owner stop clearing, and zero-minute orphan Notion time stubs on displaced devices.
+- Updated default Cloudflare sync endpoint to `https://sync.rawshn.com/api/session`.
+
 ## [1.5.1] - 2026-10-22
 
 ### Added

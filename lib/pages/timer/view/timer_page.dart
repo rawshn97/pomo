@@ -472,7 +472,7 @@ class TimerPage extends StatelessWidget {
                     getSettingsState: () => context.read<SettingsCubit>().state,
                   );
                 } else if (state.duration > Duration.zero) {
-                  if (!RemoteSessionService().hasActiveRemoteSession) {
+                  if (!RemoteSessionService().hasAnyRemoteSession) {
                     unawaited(
                       RemoteSessionService().pauseRepeatingBroadcast(
                         timerState: state,
@@ -481,7 +481,7 @@ class TimerPage extends StatelessWidget {
                     );
                   }
                 } else {
-                  if (!RemoteSessionService().hasActiveRemoteSession) {
+                  if (!RemoteSessionService().hasAnyRemoteSession) {
                     RemoteSessionService().stopRepeatingBroadcast();
                   }
                 }

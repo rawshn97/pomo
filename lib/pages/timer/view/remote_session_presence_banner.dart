@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pomo/models/remote_session.dart';
+import 'package:pomo/pages/settings/cubit/settings_cubit.dart';
 import 'package:pomo/pages/timer/cubit/timer_cubit.dart';
 import 'package:pomo/services/remote_session_service.dart';
 
@@ -40,7 +41,9 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
         final deviceIcon =
             deviceLower.contains('mobile') || deviceLower.contains('android')
                 ? Icons.phone_android
-                : (deviceLower.contains('web')
+                : (deviceLower.contains('web') ||
+                        deviceLower.contains('status') ||
+                        deviceLower.contains('rawshn')
                     ? Icons.language
                     : (deviceLower.contains('mac')
                         ? Icons.laptop_mac
@@ -140,8 +143,23 @@ class RemoteSessionPresenceBanner extends StatelessWidget {
               const SizedBox(width: 8),
               InkWell(
                 onTap: () {
+                  SettingsCubit? settingsCubit;
+                  try {
+                    settingsCubit = context.read<SettingsCubit>();
+                  } catch (_) {
+                    settingsCubit = RemoteSessionService().settingsCubit;
+                  }
                   RemoteSessionService().beginLocalTakeover();
-                  context.read<TimerCubit>().adoptRemoteSession(remoteSession);
+                  if (settingsCubit != null) {
+                    context.read<TimerCubit>().adoptRemoteSession(
+                          remoteSession,
+                          settingsCubit: settingsCubit,
+                        );
+                  } else {
+                    context
+                        .read<TimerCubit>()
+                        .adoptRemoteSession(remoteSession);
+                  }
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(

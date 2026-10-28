@@ -26,10 +26,13 @@ class _DesktopShellState extends State<DesktopShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final timerCubit = context.read<TimerCubit>();
-        RemoteSessionService().attachTimerCubit(timerCubit);
+        final settingsCubit = context.read<SettingsCubit>();
+        RemoteSessionService()
+          ..attachTimerCubit(timerCubit)
+          ..attachSettingsCubit(settingsCubit);
         TimerTickService.start(
           timerCubit: timerCubit,
-          settingsCubit: context.read<SettingsCubit>(),
+          settingsCubit: settingsCubit,
         );
       }
     });

@@ -27,10 +27,14 @@ class RemoteSessionService {
   Timer? _pollingTimer;
   Timer? _broadcastTimer;
   Timer? _remoteTickTimer;
+  Timer? _wsPingTimer;
+  Timer? _wsReconnectTimer;
   WebSocketChannel? _wsChannel;
   StreamSubscription<dynamic>? _wsSubscription;
   bool _isWsConnected = false;
+  bool _shouldKeepWsAlive = false;
   TimerCubit? _timerCubit;
+  SettingsCubit? _settingsCubit;
   bool _wasDisplacedByRemote = false;
 
   /// Whether this device currently owns (broadcasts) the shared session.
@@ -54,6 +58,7 @@ class RemoteSessionService {
   /// polling cannot reset the freshly adopted local timer.
   void beginLocalTakeover() {
     _wasDisplacedByRemote = false;
+    _ownsSession = true;
     _takeoverGraceUntil = DateTime.now().add(_takeoverGrace);
     _stopRemoteTick();
     remoteSessionNotifier.value = null;
@@ -78,6 +83,16 @@ class RemoteSessionService {
         remote.deviceId != Prefs.deviceId;
   }
 
+  /// Whether another linked device owns a running OR paused focus timer.
+  bool get hasAnyRemoteSession {
+    final remote = remoteSessionNotifier.value;
+    return remote != null &&
+        remote.remainingSeconds > 0 &&
+        remote.status != 'stopped' &&
+        remote.deviceId.isNotEmpty &&
+        remote.deviceId != Prefs.deviceId;
+  }
+
   /// Whether this device was running a timer that was displaced by another
   /// device.
   bool get wasDisplacedByRemote => _wasDisplacedByRemote;
@@ -94,15 +109,22 @@ class RemoteSessionService {
     Logger().d('RemoteSessionService: TimerCubit attached');
   }
 
-  /// Default live Cloudflare Edge Worker sync relay endpoint.
+  /// Attaches the active [SettingsCubit] so sprint durations can be synced
+  /// during remote session takeover (including from the macOS menu bar).
+  void attachSettingsCubit(SettingsCubit cubit) {
+    _settingsCubit = cubit;
+  }
+
+  SettingsCubit? get settingsCubit => _settingsCubit;
+
+  /// Default live Cloudflare Edge Worker sync relay endpoint (custom domain).
   static const String defaultCloudflareSyncEndpoint =
-      'https://pomo-sync.mishra-roshanraj.workers.dev/api/session';
+      'https://sync.rawshn.com/api/session';
 
   /// Resolves the presence endpoint URL.
   /// Priority:
   /// 1. Explicitly configured Prefs.syncRelayUrl
   /// 2. Deployed Cloudflare Edge Worker (sub-20ms WebSocket + Durable Objects)
-  /// 3. Notion proxy / Vercel relay fallback
   @visibleForTesting
   String get sessionEndpoint {
     if (Prefs.syncRelayUrl.isNotEmpty) {
@@ -142,16 +164,44 @@ class RemoteSessionService {
     return headers;
   }
 
+  void _scheduleWsReconnect() {
+    if (!_shouldKeepWsAlive) return;
+    if (_wsReconnectTimer?.isActive ?? false) return;
+    _wsReconnectTimer = Timer(const Duration(milliseconds: 3500), () {
+      _wsReconnectTimer = null;
+      if (_shouldKeepWsAlive && !_isWsConnected) {
+        unawaited(connectWebSocket());
+      }
+    });
+  }
+
+  void _startWsPingTimer() {
+    _wsPingTimer?.cancel();
+    _wsPingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (_isWsConnected && _wsChannel != null) {
+        try {
+          _wsChannel!.sink.add(jsonEncode({'type': 'PING'}));
+        } catch (_) {
+          _isWsConnected = false;
+          _scheduleWsReconnect();
+        }
+      } else if (_shouldKeepWsAlive) {
+        _scheduleWsReconnect();
+      }
+    });
+  }
+
   /// Connects to the Cloudflare Edge Worker WebSocket endpoint.
   Future<void> connectWebSocket() async {
     try {
-      await disconnectWebSocket();
+      await _closeWsTransportOnly();
       final uri = Uri.parse(wsEndpoint);
       final apiKey = Prefs.notionApiKey;
       final authUri = apiKey.isNotEmpty
           ? uri.replace(queryParameters: {'token': apiKey})
           : uri;
       _wsChannel = WebSocketChannel.connect(authUri);
+      _startWsPingTimer();
       _wsSubscription = _wsChannel!.stream.listen(
         (message) {
           _isWsConnected = true;
@@ -160,24 +210,35 @@ class RemoteSessionService {
         onError: (dynamic error) {
           _isWsConnected = false;
           Logger().d('RemoteSessionService WS error: $error');
+          _scheduleWsReconnect();
         },
         onDone: () {
           _isWsConnected = false;
+          _scheduleWsReconnect();
         },
       );
     } catch (e) {
       _isWsConnected = false;
       Logger().d('RemoteSessionService WS connect failed: $e');
+      _scheduleWsReconnect();
     }
   }
 
-  /// Disconnects the active WebSocket connection.
-  Future<void> disconnectWebSocket() async {
+  Future<void> _closeWsTransportOnly() async {
     _isWsConnected = false;
+    _wsPingTimer?.cancel();
+    _wsPingTimer = null;
     await _wsSubscription?.cancel();
     _wsSubscription = null;
     await _wsChannel?.sink.close();
     _wsChannel = null;
+  }
+
+  /// Disconnects the active WebSocket connection.
+  Future<void> disconnectWebSocket() async {
+    _wsReconnectTimer?.cancel();
+    _wsReconnectTimer = null;
+    await _closeWsTransportOnly();
   }
 
   void _handleDisplacedByRemote(RemoteSession session) {
@@ -213,6 +274,10 @@ class RemoteSessionService {
       final data = jsonDecode(message as String) as Map<String, dynamic>;
       final type = data['type'] as String?;
 
+      if (type == 'PONG') {
+        return;
+      }
+
       if (type == 'SESSION_COMMAND') {
         final command = data['command'] as String?;
         final targetDeviceId = data['targetDeviceId'] as String?;
@@ -222,6 +287,7 @@ class RemoteSessionService {
           final localCubit = _timerCubit;
           if (localCubit != null) {
             if (command == 'stop') {
+              _ownsSession = false;
               _broadcastTimer?.cancel();
               _broadcastTimer = null;
               localCubit.reset();
@@ -264,8 +330,8 @@ class RemoteSessionService {
 
   /// Starts polling for remote focus sessions every 10 seconds and establishes
   /// a WebSocket connection to the Cloudflare Edge Worker.
-  /// Used when the local device is idle/stopped.
   void startPolling() {
+    _shouldKeepWsAlive = true;
     _pollingTimer?.cancel();
     unawaited(connectWebSocket());
     fetchRemoteSession();
@@ -277,6 +343,7 @@ class RemoteSessionService {
 
   /// Stops polling for remote sessions and disconnects the WebSocket.
   void stopPolling() {
+    _shouldKeepWsAlive = false;
     _pollingTimer?.cancel();
     _pollingTimer = null;
     _stopRemoteTick();
@@ -308,6 +375,8 @@ class RemoteSessionService {
           _applyRemoteSession(session);
           return;
         }
+        _clearRemotePresence();
+        return;
       }
       if (_inTakeoverGrace) {
         return;
@@ -368,6 +437,9 @@ class RemoteSessionService {
           !current.isRunning ||
           current.remainingSeconds <= 0) {
         _stopRemoteTick();
+        if (current != null && current.remainingSeconds <= 0) {
+          remoteSessionNotifier.value = null;
+        }
         return;
       }
       final updated = current.copyWith(
@@ -433,6 +505,7 @@ class RemoteSessionService {
   Future<void> broadcastSession({
     required TimerState timerState,
     required SettingsState settingsState,
+    bool isHeartbeat = false,
   }) async {
     final apiKey = Prefs.notionApiKey;
     _ownsSession = timerState.status == TimerStatus.running ||
@@ -463,6 +536,7 @@ class RemoteSessionService {
       'lapNumber': timerState.lapNumber > 0 ? timerState.lapNumber : 1,
       'remainingSeconds': remainingSecs,
       'totalSeconds': totalSecs,
+      'isHeartbeat': isHeartbeat,
       'tagName': primaryTag?.name,
       'tagIcon': primaryTag?.icon,
       'tagColorHex': primaryTag?.colorHex,
@@ -487,7 +561,7 @@ class RemoteSessionService {
     }
 
     try {
-      await _dio.post<Map<String, dynamic>>(
+      final response = await _dio.post<Map<String, dynamic>>(
         sessionEndpoint,
         data: payload,
         options: Options(
@@ -496,6 +570,17 @@ class RemoteSessionService {
           receiveTimeout: const Duration(seconds: 4),
         ),
       );
+      final respData = response.data;
+      if (respData != null &&
+          respData['displaced'] == true &&
+          respData['session'] != null) {
+        final session = RemoteSession.fromJson(
+          respData['session'] as Map<String, dynamic>,
+        );
+        if (session.deviceId != Prefs.deviceId) {
+          _applyRemoteSession(session);
+        }
+      }
     } catch (e) {
       Logger().d('RemoteSessionService broadcast failed: $e');
     }
@@ -571,6 +656,7 @@ class RemoteSessionService {
             broadcastSession(
               timerState: currentTimer,
               settingsState: currentSettings,
+              isHeartbeat: true,
             ),
           );
         }

@@ -33,14 +33,26 @@ export class SyncRoom {
     });
   }
 
-  persistSession() {
+  async persistSession() {
     try {
       if (this.session) {
-        this.state.storage.put("session", this.session);
+        await this.state.storage.put("session", this.session);
       } else {
-        this.state.storage.delete("session");
+        await this.state.storage.delete("session");
       }
     } catch (_) {}
+  }
+
+  async pruneExpiredSession() {
+    if (!this.session || this.session.status === "stopped") return null;
+    const live = this.calculateLiveSession();
+    if (this.session.status === "running" && live.remainingSeconds <= 0) {
+      this.session = null;
+      await this.persistSession();
+      this.broadcast({ type: "SESSION_IDLE" });
+      return null;
+    }
+    return live;
   }
 
   /**
@@ -105,9 +117,9 @@ export class SyncRoom {
       this.state.acceptWebSocket(server);
 
       // Send initial state immediately upon connection
-      if (this.session && this.session.status !== "stopped") {
-        const live = this.calculateLiveSession();
-        server.send(JSON.stringify({ type: "SESSION_UPDATE", session: live }));
+      const initialLive = await this.pruneExpiredSession();
+      if (initialLive) {
+        server.send(JSON.stringify({ type: "SESSION_UPDATE", session: initialLive }));
       } else {
         server.send(JSON.stringify({ type: "SESSION_IDLE" }));
       }
@@ -120,12 +132,12 @@ export class SyncRoom {
 
     // REST: GET /api/session
     if (request.method === "GET" && (url.pathname === "/api/session" || url.pathname === "/session")) {
-      if (!this.session || this.session.status === "stopped") {
+      const live = await this.pruneExpiredSession();
+      if (!live) {
         return new Response(JSON.stringify({ active: false, session: null }), {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
-      const live = this.calculateLiveSession();
       return new Response(JSON.stringify({ active: live.isRunning, session: live }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
@@ -134,7 +146,7 @@ export class SyncRoom {
     // REST: POST /api/session
     if (request.method === "POST" && (url.pathname === "/api/session" || url.pathname === "/session")) {
       const body = await request.json();
-      return this.handleSessionUpdate(body);
+      return await this.handleSessionUpdate(body);
     }
 
     // REST: POST /api/para/broadcast - sub-20ms cross-device PARA status invalidation
@@ -232,6 +244,7 @@ export class SyncRoom {
         JSON.stringify({
           status: "healthy",
           service: "pomo-cloudflare-sync",
+          version: "1.5.2",
           connections: this.state.getWebSockets().length,
           hasActiveSession: !!(this.session && this.session.status !== "stopped"),
           paraRevision: this.paraRevision,
@@ -243,11 +256,39 @@ export class SyncRoom {
     return new Response("Not found", { status: 404, headers: corsHeaders });
   }
 
-  handleSessionUpdate(body) {
+  async handleSessionUpdate(body, senderWs = null) {
     const isController =
       body.isController === true ||
       body.force === true ||
       body.deviceId === "para-status-web";
+
+    // Displaced devices firing a periodic 10s heartbeat must NOT reclaim
+    // ownership from the device that just took over.
+    if (
+      body.isHeartbeat === true &&
+      this.session &&
+      this.session.status !== "stopped" &&
+      body.deviceId &&
+      this.session.deviceId !== body.deviceId
+    ) {
+      const currentLive = await this.pruneExpiredSession();
+      if (currentLive) {
+        if (senderWs) {
+          try {
+            senderWs.send(JSON.stringify({ type: "SESSION_UPDATE", session: currentLive }));
+          } catch (_) {}
+        }
+        return new Response(
+          JSON.stringify({
+            success: true,
+            ignored: true,
+            displaced: true,
+            session: currentLive,
+          }),
+          { headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
     if (body.status === "stopped") {
       // Displaced devices sending a stale stopped update must not clear
@@ -265,7 +306,7 @@ export class SyncRoom {
 
       const targetDeviceId = this.session?.deviceId || body.deviceId || null;
       this.session = null;
-      this.persistSession();
+      await this.persistSession();
       this.broadcast({ type: "SESSION_IDLE" });
       this.broadcast({
         type: "SESSION_COMMAND",
@@ -277,6 +318,33 @@ export class SyncRoom {
       return new Response(JSON.stringify({ success: true, active: false }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    if (body.status === "resumed" || body.action === "resume") {
+      if (this.session) {
+        const remainingSecs =
+          typeof body.remainingSeconds === "number" && body.remainingSeconds > 0
+            ? body.remainingSeconds
+            : this.session.remainingSeconds || 1500;
+        const now = new Date();
+        this.session.status = "running";
+        this.session.remainingSeconds = remainingSecs;
+        this.session.endsAt = new Date(now.getTime() + remainingSecs * 1000).toISOString();
+        this.session.updatedAt = now.toISOString();
+        await this.persistSession();
+
+        const live = this.calculateLiveSession();
+        this.broadcast({ type: "SESSION_UPDATE", session: live });
+        this.broadcast({
+          type: "SESSION_COMMAND",
+          command: "resume",
+          targetDeviceId: this.session.deviceId,
+          by: body.deviceName || body.deviceId || "controller",
+        });
+        return new Response(JSON.stringify({ success: true, session: live }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
     }
 
     if (body.status === "paused") {
@@ -300,7 +368,7 @@ export class SyncRoom {
         this.session.remainingSeconds = live.remainingSeconds;
         this.session.endsAt = null;
         this.session.updatedAt = new Date().toISOString();
-        this.persistSession();
+        await this.persistSession();
 
         const pausedLive = {
           ...this.session,
@@ -322,8 +390,6 @@ export class SyncRoom {
         );
       }
     }
-
-    const wasPaused = this.session && this.session.status === "paused";
 
     const now = new Date();
     const remainingSecs =
@@ -352,7 +418,7 @@ export class SyncRoom {
       updatedAt: now.toISOString(),
       endsAt: endsAt,
     };
-    this.persistSession();
+    await this.persistSession();
 
     const live = this.calculateLiveSession();
     this.broadcast({ type: "SESSION_UPDATE", session: live });
@@ -370,13 +436,13 @@ export class SyncRoom {
         return;
       }
       if (data.type === "BROADCAST_SESSION" && data.payload) {
-        this.handleSessionUpdate(data.payload);
+        await this.handleSessionUpdate(data.payload, ws);
       }
       if (data.type === "SESSION_COMMAND") {
         if (data.command === "stop") {
           const target = this.session?.deviceId || data.targetDeviceId || null;
           this.session = null;
-          this.persistSession();
+          await this.persistSession();
           this.broadcast({ type: "SESSION_IDLE" });
           this.broadcast({
             type: "SESSION_COMMAND",
@@ -389,7 +455,7 @@ export class SyncRoom {
             this.session.status = "paused";
             this.session.remainingSeconds = live.remainingSeconds;
             this.session.endsAt = null;
-            this.persistSession();
+            await this.persistSession();
             const pausedLive = {
               ...this.session,
               liveRemaining: this.session.remainingSeconds,
@@ -409,7 +475,7 @@ export class SyncRoom {
             this.session.endsAt = new Date(
               Date.now() + (this.session.remainingSeconds || 1500) * 1000
             ).toISOString();
-            this.persistSession();
+            await this.persistSession();
             const live = this.calculateLiveSession();
             this.broadcast({ type: "SESSION_UPDATE", session: live });
             this.broadcast({
@@ -429,7 +495,7 @@ export class SyncRoom {
         }
         const target = this.session?.deviceId || data.deviceId || null;
         this.session = null;
-        this.persistSession();
+        await this.persistSession();
         this.broadcast({ type: "SESSION_IDLE" });
         this.broadcast({
           type: "SESSION_COMMAND",
@@ -516,7 +582,9 @@ export default {
     }
 
     if (env.SYNC_ROOM) {
-      const id = env.SYNC_ROOM.idFromName("global_pomo_sync");
+      const url = new URL(request.url);
+      const roomName = (url.searchParams.get("room") || "global_pomo_sync").slice(0, 64);
+      const id = env.SYNC_ROOM.idFromName(roomName);
       const obj = env.SYNC_ROOM.get(id);
       return obj.fetch(request);
     }

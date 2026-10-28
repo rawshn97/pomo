@@ -1,6 +1,7 @@
 {
   "name": "pomo-cloudflare-sync",
   "version": "1.0.0",
+  "type": "module",
   "description": "Cloudflare Edge Worker for real-time Pomodoro timer cross-device synchronization with WebSockets",
   "main": "src/index.js",
   "scripts": {

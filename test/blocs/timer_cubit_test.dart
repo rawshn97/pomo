@@ -378,5 +378,47 @@ void main() {
       expect(cubit.state.activeTags, isEmpty);
       cubit.close();
     });
+
+    test(
+        'adoptRemoteSession syncs 50m and 15m sprint lengths with SettingsCubit',
+        () {
+      final settingsCubit = SettingsCubit()..loadSettings();
+      final cubit = TimerCubit();
+
+      // 50-minute Deep Work sprint from rawshn.com/status with 48m (2880s) remaining
+      final remote50 = RemoteSession(
+        deviceId: 'para-status-web',
+        deviceName: 'rawshn.com/status',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 2880,
+        totalSeconds: 3000,
+        updatedAt: DateTime.now(),
+      );
+      cubit.adoptRemoteSession(remote50, settingsCubit: settingsCubit);
+      expect(settingsCubit.state.workMinutes, equals(50));
+      expect(Prefs.workMinutes, equals(50));
+      expect(cubit.state.duration, equals(const Duration(seconds: 120)));
+
+      // 15-minute Quick Sprint with 12m (720s) remaining
+      final remote15 = RemoteSession(
+        deviceId: 'para-status-web',
+        deviceName: 'rawshn.com/status',
+        status: 'running',
+        lap: 'work',
+        lapNumber: 1,
+        remainingSeconds: 720,
+        totalSeconds: 900,
+        updatedAt: DateTime.now(),
+      );
+      cubit.adoptRemoteSession(remote15, settingsCubit: settingsCubit);
+      expect(settingsCubit.state.workMinutes, equals(15));
+      expect(Prefs.workMinutes, equals(15));
+      expect(cubit.state.duration, equals(const Duration(seconds: 180)));
+
+      cubit.close();
+      settingsCubit.close();
+    });
   });
 }

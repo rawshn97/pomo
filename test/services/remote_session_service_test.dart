@@ -149,7 +149,8 @@ void main() {
       cubit.close();
     });
 
-    test('beginLocalTakeover clears stale remote presence and ignores stale '
+    test(
+        'beginLocalTakeover clears stale remote presence and ignores stale '
         'frames during grace', () {
       final service = RemoteSessionService();
       final stale = jsonEncode({

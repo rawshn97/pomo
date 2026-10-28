@@ -223,44 +223,68 @@ class TimerCubit extends Cubit<TimerState> {
   /// takes over the focus session. Does NOT finalize or log partial minutes
   /// to Notion because the active session continues on the destination device.
   void resetForRemoteTakeover() {
+    final logPageId = state.activeLogPageId;
+    if (logPageId != null && logPageId.isNotEmpty && Prefs.syncedMinutes == 0) {
+      NotionSyncService().deleteSessionRecord(logPageId);
+    }
     _tagSegmentStartedAt = null;
     _tagCreditedMinutes = 0;
     Prefs.duration = Duration.zero;
     Prefs.timerStatus = TimerStatus.stopped;
+    Prefs.clearSessionSyncState();
 
     emit(
       state.copyWith(
         status: () => TimerStatus.stopped,
         duration: () => Duration.zero,
+        activeLogPageId: () => null,
       ),
     );
   }
 
   /// Adopt a remote focus session from another linked device (Take Over).
-  /// Synchronizes elapsed lap duration, lap type, lap number, activity tags,
-  /// and active task, then immediately starts the local countdown.
-  void adoptRemoteSession(RemoteSession session) {
+  /// Synchronizes sprint length, elapsed lap duration, lap type, lap number,
+  /// activity tags, and active task, then immediately starts the local countdown.
+  void adoptRemoteSession(
+    RemoteSession session, {
+    SettingsCubit? settingsCubit,
+  }) {
     final lap = TimerLap.values.firstWhere(
       (l) => l.name == session.lap,
       orElse: () => TimerLap.work,
     );
-    // Align elapsed time with THIS device's lap length so the countdown shows
-    // exactly the remaining time of the remote session (seamless handoff),
-    // even when the remote lap length differs from local settings.
-    final localLapSeconds = switch (lap) {
+
+    // Sync sprint length when remote specifies a valid total duration (e.g. 15m, 25m, 50m)
+    if (session.totalSeconds >= 60) {
+      final remoteMins = (session.totalSeconds / 60).round().clamp(1, 60);
+      switch (lap) {
+        case TimerLap.work:
+          Prefs.workMinutes = remoteMins;
+          settingsCubit?.setWorkMinutes(remoteMins);
+        case TimerLap.shortBreak:
+          Prefs.shortBreakMinutes = remoteMins;
+          settingsCubit?.setShortBreakMinutes(remoteMins);
+        case TimerLap.longBreak:
+          Prefs.longBreakMinutes = remoteMins;
+          settingsCubit?.setLongBreakMinutes(remoteMins);
+      }
+    }
+
+    final effectiveTotalSeconds = switch (lap) {
           TimerLap.work => Prefs.workMinutes,
           TimerLap.shortBreak => Prefs.shortBreakMinutes,
           TimerLap.longBreak => Prefs.longBreakMinutes,
         } *
         60;
-    final elapsedSecs =
-        (localLapSeconds - session.remainingSeconds).clamp(0, 1 << 30);
+    final elapsedSecs = (effectiveTotalSeconds - session.remainingSeconds)
+        .clamp(0, effectiveTotalSeconds);
     final newDuration = Duration(seconds: elapsedSecs);
     Prefs.duration = newDuration;
     Prefs.timerLap = lap;
     final lapNumber = session.lapNumber > 0 ? session.lapNumber : 1;
     Prefs.lapNumber = lapNumber;
     Prefs.timerStatus = TimerStatus.running;
+    _tagCreditedMinutes = 0;
 
     // 1. Resolve and adopt Activity Tags
     final resolvedTags = <TrackerTag>[];
@@ -328,6 +352,7 @@ class TimerCubit extends Cubit<TimerState> {
 
     if (remoteTask != null && lap == TimerLap.work) {
       _checkAndMoveActiveTaskToInProgress();
+      _createNotionRecord();
     }
   }
 

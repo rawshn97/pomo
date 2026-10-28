@@ -38,7 +38,7 @@ class SliderInput extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Slider(
-                value: value.toDouble(),
+                value: value.toDouble().clamp(min, max),
                 min: min,
                 max: max,
                 divisions: divisions,

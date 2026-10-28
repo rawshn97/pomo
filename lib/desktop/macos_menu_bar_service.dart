@@ -171,7 +171,11 @@ class MacosMenuBarService {
     final deviceEmoji =
         deviceLower.contains('mobile') || deviceLower.contains('android')
             ? '📱'
-            : (deviceLower.contains('web') ? '🌐' : '💻');
+            : (deviceLower.contains('web') ||
+                    deviceLower.contains('status') ||
+                    deviceLower.contains('rawshn')
+                ? '🌐'
+                : '💻');
     final title = '$deviceEmoji ${remoteSession.formattedRemaining}';
     final tagText = remoteSession.tagName ?? 'Focus';
     final taskText = remoteSession.taskTitle;
@@ -268,7 +272,10 @@ class MacosMenuBarService {
     _menuSessionActive = sessionActive;
 
     final remote = RemoteSessionService().remoteSessionNotifier.value;
-    final canTakeOver = !sessionActive && remote != null && remote.isRunning;
+    final canTakeOver = !sessionActive &&
+        remote != null &&
+        remote.remainingSeconds > 0 &&
+        remote.status != 'stopped';
     final wasDisplaced = RemoteSessionService().wasDisplacedByRemote;
     final takeoverLabel = wasDisplaced
         ? 'Take over back (${remote?.formattedRemaining ?? ""})'
@@ -331,9 +338,21 @@ class MacosMenuBarService {
     switch (key) {
       case 'takeover':
         final remote = RemoteSessionService().remoteSessionNotifier.value;
-        if (remote != null && remote.isRunning) {
+        if (remote != null &&
+            remote.remainingSeconds > 0 &&
+            remote.status != 'stopped') {
+          final settingsCubit = RemoteSessionService().settingsCubit;
           RemoteSessionService().beginLocalTakeover();
-          timerCubit.adoptRemoteSession(remote);
+          timerCubit.adoptRemoteSession(
+            remote,
+            settingsCubit: settingsCubit,
+          );
+          if (settingsCubit != null) {
+            RemoteSessionService().startRepeatingBroadcast(
+              getTimerState: () => timerCubit.state,
+              getSettingsState: () => settingsCubit.state,
+            );
+          }
         }
       case 'toggle':
         timerCubit.toggle();

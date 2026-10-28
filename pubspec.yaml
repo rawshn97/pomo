@@ -1,6 +1,6 @@
 name: pomo
 description: Cross-platform Pomodoro timer with hourly time tracking, Notion PARA sync, and RGB webhooks
-version: 1.5.1+15
+version: 1.5.2+16
 publish_to: none
 
 environment:

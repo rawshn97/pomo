@@ -2,7 +2,7 @@
 
 **Spec file:** `specs/remote-sync.md`  
 **Parent index:** [`SPEC.md`](../SPEC.md)  
-**Shipped in:** `v1.4.6` (initial WebSocket relay), `v1.4.7` (payload deserialization fix + 1-second local notification tick), `v1.4.8` (omnidirectional 3-way sync, macOS menu bar sync, PWA dynamic title, session takeover), `v1.4.9` (bidirectional takeover bugfix & displaced device guard), `v1.5.1` (active task and activity tags migration during cross-device takeover)  
+**Shipped in:** `v1.4.6` (initial WebSocket relay), `v1.4.7` (payload deserialization fix + 1-second local notification tick), `v1.4.8` (omnidirectional 3-way sync, macOS menu bar sync, PWA dynamic title, session takeover), `v1.4.9` (bidirectional takeover bugfix & displaced device guard), `v1.5.1` (active task and activity tags migration during cross-device takeover), `v1.5.2` (Durable Object storage persistence across WebSocket hibernation, custom domain `sync.rawshn.com`, sprint length sync for 15m/50m sprints, and stale heartbeat rejection)  
 **Related files:**
 - `worker/src/index.js` (Cloudflare Worker + Durable Objects WebSocket relay)
 - `worker/wrangler.toml` (Cloudflare Worker configuration)
@@ -133,7 +133,9 @@ When an operator switches devices during a sprint, tapping "Take Over" on the `R
 
 ## 5. Endpoints & Infrastructure
 
-- **Cloudflare Worker:** `https://pomo-sync.mishra-roshanraj.workers.dev`
-- **WebSocket Gateway:** `wss://pomo-sync.mishra-roshanraj.workers.dev/ws`
-- **REST Session Check:** `GET https://pomo-sync.mishra-roshanraj.workers.dev/api/session`
-- **Fallback Vercel Proxy:** `https://pomo-focus-sand.vercel.app/api/session`
+- **Primary Cloudflare Custom Domain:** `https://sync.rawshn.com`
+- **WebSocket Gateway:** `wss://sync.rawshn.com/ws` (25s client PING + automatic reconnect)
+- **REST Session Check:** `GET https://sync.rawshn.com/api/session`
+- **Durable Object Storage Persistence:** `SyncRoom` persists active sessions to Durable Object transactional storage (`state.storage.put("session")`) and restores inside `blockConcurrencyWhile` so Cloudflare WebSocket Hibernation idle eviction never drops active timers started from `rawshn.com/status` or peer apps.
+- **Displaced Heartbeat Protection:** Periodic 10s broadcasts carry `isHeartbeat: true`; `SyncRoom` rejects stale heartbeats from displaced `deviceId`s and returns `{ displaced: true, session }` so takeovers never bounce back.
+- **Fallback Workers URL:** `https://pomo-sync.mishra-roshanraj.workers.dev/api/session`
